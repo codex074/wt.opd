@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมสรุปข้อมูลระยะเวลารอคอยรับยา</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Thai font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader {
+            border: 4px solid rgba(0, 0, 0, .1);
+            border-left-color: #069;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        .inspector-table th, .inspector-table td {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .inspector-table th { background-color: #f1f5f9; }
+        .status-ok { color: #16a34a; }
+        .status-error { color: #dc2626; font-weight: 600; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex flex-col items-center min-h-screen p-4 sm:p-6 md:p-8">
+
+    <div class="w-full max-w-7xl bg-white rounded-xl shadow-lg p-6 sm:p-8">
+        <!-- Header -->
+        <header class="text-center mb-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-sky-800">📊 โปรแกรมสรุปข้อมูลระยะเวลารอคอยรับยา</h1>
+            <p class="text-gray-500 mt-2">อัปโหลดไฟล์ Excel เพื่อสร้างรายงานสรุปผลได้อย่างรวดเร็ว</p>
+        </header>
+
+        <!-- How to Use Section -->
+        <div class="bg-sky-50 border-l-4 border-sky-500 text-sky-800 p-4 rounded-md mb-6" role="alert">
+            <h3 class="font-bold mb-2">คำแนะนำการใช้งาน</h3>
+            <p>ไฟล์ Excel ของคุณต้องมีคอลัมน์ต่อไปนี้ (ชื่อต้องตรงกัน):</p>
+            <ul class="list-disc list-inside mt-2 text-sm">
+                <li><code class="bg-sky-100 px-1 rounded">วันที่ตรวจ</code></li>
+                <li><code class="bg-sky-100 px-1 rounded">เวลาออกคิว</code></li>
+                <li><code class="bg-sky-100 px-1 rounded">เวลาเรียกคิว</code></li>
+                <li><code class="bg-sky-100 px-1 rounded">ประเภทคิว</code> (ถ้ามี)</li>
+            </ul>
+        </div>
+        
+        <!-- Drop Zone -->
+        <div id="drop-zone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 sm:p-12 text-center cursor-pointer transition-all duration-300 hover:border-sky-500 hover:bg-gray-50">
+             <div class="flex flex-col items-center text-gray-500 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p class="font-semibold">ลากไฟล์ Excel (.xlsx) มาวางที่นี่</p>
+                <p class="text-sm">หรือคลิกเพื่อเลือกไฟล์</p>
+                <input type="file" id="file-input" class="hidden" accept=".xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+            </div>
+        </div>
+
+        <!-- Status & Download Button -->
+        <div class="text-center my-4 min-h-[40px] flex items-center justify-center flex-col">
+            <div id="status" class="font-semibold"></div>
+        </div>
+
+        <!-- Inspector Section -->
+        <div id="inspector-section" class="hidden">
+            <h2 class="text-xl font-bold text-gray-700 mt-6 mb-3">🔍 ตัวตรวจสอบข้อมูล (5 แถวแรก)</h2>
+            <p class="text-sm text-gray-600 mb-4">ตารางนี้แสดงให้เห็นว่าโปรแกรมอ่านและประมวลผลข้อมูลดิบจากไฟล์ Excel ของคุณอย่างไร เพื่อช่วยวินิจฉัยปัญหา</p>
+            <div id="inspector-container" class="overflow-x-auto mb-8"></div>
+        </div>
+
+        <!-- Result Section -->
+        <div id="result-section" class="hidden">
+            <h2 class="text-xl font-bold text-gray-700 mt-6 mb-3">สรุปผลการประมวลผล</h2>
+            <button id="download-btn" class="mb-4 bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-colors duration-300 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                ดาวน์โหลดผลลัพธ์
+            </button>
+            <div id="result-container" class="overflow-x-auto"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const statusDiv = document.getElementById('status');
+        const inspectorSection = document.getElementById('inspector-section');
+        const inspectorContainer = document.getElementById('inspector-container');
+        const resultSection = document.getElementById('result-section');
+        const resultContainer = document.getElementById('result-container');
+        const downloadBtn = document.getElementById('download-btn');
+        let finalReportData = [];
+
+        // --- Event Listeners ---
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('bg-sky-50', 'border-sky-500'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('bg-sky-50', 'border-sky-500'); });
+        dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('bg-sky-50', 'border-sky-500'); if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]); });
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
+        downloadBtn.addEventListener('click', () => {
+            if (finalReportData.length > 0) {
+                const worksheet = XLSX.utils.json_to_sheet(finalReportData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "สรุปผล");
+                const today = new Date();
+                const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                XLSX.writeFile(workbook, `resualt-ระยะเวลารอคอย-${dateStr}.xlsx`);
+            }
+        });
+
+        // --- File Handling ---
+        function handleFile(file) {
+            if (file && file.name.endsWith('.xlsx')) {
+                statusDiv.innerHTML = '<div class="flex items-center gap-2 text-gray-600"><div class="loader"></div><span>กำลังประมวลผลไฟล์...</span></div>';
+                inspectorSection.classList.add('hidden');
+                resultSection.classList.add('hidden');
+                setTimeout(() => processFile(file), 100);
+            } else {
+                showError('❌ โปรดเลือกไฟล์ .xlsx เท่านั้น');
+            }
+        }
+
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: null, raw: false });
+
+                    inspectData(jsonData);
+                    const report = generateReport(jsonData);
+                    finalReportData = report;
+
+                    if (report.length > 0) {
+                        statusDiv.innerHTML = `<span class="text-green-600">✅ ประมวลผลสำเร็จ! พบข้อมูลสรุป ${report.length} เดือน</span>`;
+                        displayReport(report);
+                    } else {
+                        showError('⚠️ ไม่พบข้อมูลที่ตรงตามเงื่อนไขเพื่อสร้างรายงานสรุป', 'warn');
+                    }
+                } catch (error) {
+                    console.error('Processing Error:', error);
+                    showError(`❌ ${error.message}`);
+                }
+            };
+            reader.onerror = () => showError('❌ ไม่สามารถอ่านไฟล์ได้');
+            reader.readAsArrayBuffer(file);
+        }
+        
+        // --- Helper Functions ---
+        const parseDateWithThaiSupport = (dateInput) => {
+            if (dateInput instanceof Date && !isNaN(dateInput)) {
+                const newDate = new Date(dateInput.getTime());
+                if (newDate.getFullYear() > 2500) newDate.setFullYear(newDate.getFullYear() - 543);
+                return newDate;
+            }
+            if (typeof dateInput === 'string') {
+                const parts = dateInput.split(/[\/\-]/);
+                if (parts.length === 3) {
+                    const day = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10);
+                    let year = parseInt(parts[2], 10);
+                    if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                        if (year > 2500) year -= 543;
+                        const newDate = new Date(year, month - 1, day);
+                        if (newDate && newDate.getFullYear() === year && newDate.getMonth() === month - 1) return newDate;
+                    }
+                }
+            }
+            return null;
+        };
+        
+        const parseTime = (timeInput, baseDate) => {
+            if (!baseDate || !timeInput) return null;
+            if (timeInput instanceof Date && !isNaN(timeInput)) return timeInput; // Already a date object
+            if (typeof timeInput === 'string') {
+                const parts = timeInput.split(':');
+                if (parts.length >= 2) {
+                    const hours = parseInt(parts[0], 10);
+                    const minutes = parseInt(parts[1], 10);
+                    const seconds = parts.length > 2 ? parseInt(parts[2], 10) : 0;
+                    if (!isNaN(hours) && !isNaN(minutes) && !isNaN(seconds)) {
+                        const newDateTime = new Date(baseDate.getTime());
+                        newDateTime.setHours(hours, minutes, seconds, 0);
+                        return newDateTime;
+                    }
+                }
+            }
+            return null;
+        };
+
+        const getTimePeriod = (startTime) => {
+            if (!startTime || !(startTime instanceof Date) || isNaN(startTime)) return 'นอกช่วงเวลา';
+            const hour = startTime.getHours();
+            const minute = startTime.getMinutes();
+            if (hour >= 8 && hour < 10) return '08.00–09.59';
+            if (hour >= 10 && hour < 12) return '10.00–11.59';
+            if (hour >= 12 && hour < 14) return '12.00–13.59';
+            if (hour >= 14 && (hour < 16 || (hour === 16 && minute <= 30))) return '14.00–16.30';
+            return 'นอกช่วงเวลา';
+        };
+        const convertToThaiMonthYear = (monthStr) => {
+            const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+            const [year, month] = monthStr.split('-').map(Number);
+            return `${thaiMonths[month - 1]} ${year + 543}`;
+        };
+
+        // --- Data Inspector ---
+        function inspectData(data) {
+            if (data.length === 0) return;
+            inspectorSection.classList.remove('hidden');
+            let inspectionHTML = '<table class="w-full inspector-table"><thead><tr><th>แถวที่</th><th>วันที่ตรวจ (Raw)</th><th>ปี ค.ศ. (ที่ใช้คำนวณ)</th><th>เวลาออกคิว (Raw)</th><th>เวลาเรียกคิว (Raw)</th><th>ผลการตรวจสอบ</th></tr></thead><tbody>';
+            const formatRawValue = val => val === null ? 'NULL' : `${String(val)} (${typeof val})`;
+            data.slice(0, 5).forEach((row, index) => {
+                let status = '';
+                const receiptDateAD = parseDateWithThaiSupport(row['วันที่ตรวจ']);
+                const startTime = parseTime(row['เวลาออกคิว'], receiptDateAD);
+                const callTime = parseTime(row['เวลาเรียกคิว'], receiptDateAD);
+                
+                if (!receiptDateAD) { status = 'วันที่ตรวจไม่ถูกต้อง'; }
+                else if (!startTime) { status = 'เวลาออกคิวไม่ถูกต้อง'; }
+                else if (!callTime) { status = 'เวลาเรียกคิวไม่ถูกต้อง'; }
+                else {
+                    const EXCLUDE_TYPES = ['พ'];
+                    if (row['ประเภทคิว'] && EXCLUDE_TYPES.some(ex => String(row['ประเภทคิว']).startsWith(ex))) { status = "ประเภทคิว 'พ' ถูกยกเว้น"; }
+                    else {
+                        const waitMinutes = (callTime.getTime() - startTime.getTime()) / (1000 * 60);
+                        if (waitMinutes < 0 || waitMinutes > 150) { status = `เวลารอ ${waitMinutes.toFixed(0)} นาที (ต้องอยู่ระหว่าง 0-150)`; }
+                        else {
+                            const timePeriod = getTimePeriod(startTime);
+                            if (timePeriod === 'นอกช่วงเวลา') { status = 'อยู่นอกช่วงเวลาทำการ (08:00-16:30)'; }
+                            else { status = 'ผ่านเงื่อนไข'; }
+                        }
+                    }
+                }
+                inspectionHTML += `<tr>
+                    <td>${index + 2}</td>
+                    <td><code class="text-xs">${formatRawValue(row['วันที่ตรวจ'])}</code></td>
+                    <td><code class="text-xs font-bold ${receiptDateAD ? 'text-blue-600' : 'status-error'}">${receiptDateAD ? receiptDateAD.getFullYear() : 'N/A'}</code></td>
+                    <td><code class="text-xs">${formatRawValue(row['เวลาออกคิว'])}</code></td>
+                    <td><code class="text-xs">${formatRawValue(row['เวลาเรียกคิว'])}</code></td>
+                    <td class="${status === 'ผ่านเงื่อนไข' ? 'status-ok' : 'status-error'}">${status}</td>
+                </tr>`;
+            });
+            inspectionHTML += '</tbody></table>';
+            inspectorContainer.innerHTML = inspectionHTML;
+        }
+
+        // --- Core Report Generation Logic ---
+        function generateReport(data) {
+            if (data.length === 0) return [];
+            const requiredColumns = ['วันที่ตรวจ', 'เวลาออกคิว', 'เวลาเรียกคิว'];
+            if (!requiredColumns.every(col => col in data[0])) { throw new Error(`ไฟล์ที่อัปโหลดขาดคอลัมน์ที่จำเป็น`); }
+            
+            const EXCLUDE_TYPES = ['พ'];
+            let df = data.filter(row => !row['ประเภทคิว'] || !EXCLUDE_TYPES.some(ex => String(row['ประเภทคิว']).startsWith(ex)));
+            const totalPatientsAll = df.reduce((acc, row) => {
+                const receiptDate = parseDateWithThaiSupport(row['วันที่ตรวจ']);
+                if (receiptDate) {
+                    const monthKey = `${receiptDate.getFullYear()}-${String(receiptDate.getMonth() + 1).padStart(2, '0')}`;
+                    acc[monthKey] = (acc[monthKey] || 0) + 1;
+                }
+                return acc;
+            }, {});
+
+            let processedData = df.map(row => {
+                const receiptDate = parseDateWithThaiSupport(row['วันที่ตรวจ']);
+                const startTime = parseTime(row['เวลาออกคิว'], receiptDate);
+                const callTime = parseTime(row['เวลาเรียกคิว'], receiptDate);
+                if (!receiptDate || !startTime || !callTime) return null;
+                const waitMinutes = (callTime.getTime() - startTime.getTime()) / (1000 * 60);
+                if (waitMinutes < 0 || waitMinutes > 150) return null;
+                const timePeriod = getTimePeriod(startTime);
+                if (timePeriod === 'นอกช่วงเวลา') return null;
+                const monthKey = `${receiptDate.getFullYear()}-${String(receiptDate.getMonth() + 1).padStart(2, '0')}`;
+                return { month: monthKey, waitMinutes, timePeriod };
+            }).filter(Boolean);
+
+            const summary = processedData.reduce((acc, item) => {
+                const { month, waitMinutes, timePeriod } = item;
+                if (!acc[month]) {
+                    acc[month] = { totalWait: 0, totalCount: 0, count_le_45: 0, 'sum_08.00–09.59': 0, 'count_08.00–09.59': 0, 'sum_10.00–11.59': 0, 'count_10.00–11.59': 0, 'count_le_60_10-12': 0, 'sum_12.00–13.59': 0, 'count_12.00–13.59': 0, 'count_le_60_12-14': 0, 'sum_14.00–16.30': 0, 'count_14.00–16.30': 0, };
+                }
+                const s = acc[month];
+                s.totalWait += waitMinutes; s.totalCount++;
+                if (waitMinutes <= 45) s.count_le_45++;
+                if (timePeriod === '10.00–11.59' && waitMinutes <= 60) s['count_le_60_10-12']++;
+                if (timePeriod === '12.00–13.59' && waitMinutes <= 60) s['count_le_60_12-14']++;
+                s[`sum_${timePeriod}`] += waitMinutes; s[`count_${timePeriod}`]++;
+                return acc;
+            }, {});
+            
+            return Object.keys(summary).sort().map(month => {
+                const s = summary[month];
+                const totalCalculated = s['count_08.00–09.59'] + s['count_10.00–11.59'] + s['count_12.00–13.59'] + s['count_14.00–16.30'];
+                return { 'เดือน': convertToThaiMonthYear(month), 'จำนวนผู้ป่วยทั้งหมด': totalPatientsAll[month] || 0, 'จำนวนผู้ป่วยที่นำมาคำนวณ': totalCalculated, 'ระยะเวลารอคอยเฉลี่ยทั้งวัน': s.totalCount > 0 ? parseFloat((s.totalWait / s.totalCount).toFixed(2)) : 0, 'จำนวนผู้ป่วย (<= 45 นาที)': s.count_le_45, 'เฉลี่ย (นาที) 08-10': s['count_08.00–09.59'] > 0 ? parseFloat((s['sum_08.00–09.59'] / s['count_08.00–09.59']).toFixed(2)) : 0, 'จำนวนผู้ป่วย 08-10': s['count_08.00–09.59'], 'เฉลี่ย (นาที) 10-12': s['count_10.00–11.59'] > 0 ? parseFloat((s['sum_10.00–11.59'] / s['count_10.00–11.59']).toFixed(2)) : 0, 'จำนวนผู้ป่วย 10-12': s['count_10.00–11.59'], 'จำนวนผู้ป่วย (<= 60 นาที) 10-12': s['count_le_60_10-12'], 'เฉลี่ย (นาที) 12-14': s['count_12.00–13.59'] > 0 ? parseFloat((s['sum_12.00–13.59'] / s['count_12.00–13.59']).toFixed(2)) : 0, 'จำนวนผู้ป่วย 12-14': s['count_12.00–13.59'], 'จำนวนผู้ป่วย (<= 60 นาที) 12-14': s['count_le_60_12-14'], 'เฉลี่ย (นาที) 14-16.30': s['count_14.00–16.30'] > 0 ? parseFloat((s['sum_14.00–16.30'] / s['count_14.00–16.30']).toFixed(2)) : 0, 'จำนวนผู้ป่วย 14-16.30': s['count_14.00–16.30'], };
+            });
+        }
+
+        // --- UI Display Logic ---
+        function displayReport(reportData) {
+            resultSection.classList.remove('hidden');
+            const table = document.createElement('table');
+            table.className = 'w-full text-sm text-left text-gray-700';
+            const thead = document.createElement('thead');
+            thead.className = 'text-xs text-white uppercase bg-sky-800';
+            const tbody = document.createElement('tbody');
+            if (reportData.length === 0) { resultContainer.innerHTML = ''; return; }
+            const headers = Object.keys(reportData[0]);
+            const headerRow = document.createElement('tr');
+            headers.forEach(headerText => { const th = document.createElement('th'); th.scope = 'col'; th.className = 'px-4 py-3 text-center'; th.textContent = headerText.replace(/ /g, '\u00A0'); headerRow.appendChild(th); });
+            thead.appendChild(headerRow);
+            reportData.forEach(rowData => { const row = document.createElement('tr'); row.className = 'bg-white border-b hover:bg-gray-50'; headers.forEach(header => { const td = document.createElement('td'); td.className = 'px-4 py-3 text-center'; td.textContent = rowData[header]; if (header !== 'เดือน' || !isNaN(rowData[header])) { td.classList.add('text-right'); } row.appendChild(td); }); tbody.appendChild(row); });
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            resultContainer.innerHTML = '';
+            resultContainer.appendChild(table);
+        }
+        
+        function showError(message, type = 'error') {
+            const colorClass = type === 'warn' ? 'text-amber-600' : 'text-red-600';
+            statusDiv.innerHTML = `<span class="${colorClass}">${message}</span>`;
+            inspectorSection.classList.remove('hidden'); // Show inspector on error too
+        }
+    </script>
+</body>
+</html>
+
