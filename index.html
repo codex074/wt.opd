@@ -413,22 +413,51 @@
             const summary = processedData.reduce((acc, item) => {
                 const { month, waitMinutes, timePeriod } = item;
                 if (!acc[month]) {
-                    acc[month] = { totalWait: 0, totalCount: 0, count_le_45: 0, 'sum_08.00–09.59': 0, 'count_08.00–09.59': 0, 'sum_10.00–11.59': 0, 'count_10.00–11.59': 0, 'count_le_60_10-12': 0, 'sum_12.00–13.59': 0, 'count_12.00–13.59': 0, 'count_le_60_12-14': 0, 'sum_14.00–16.30': 0, 'count_14.00–16.30': 0, };
+                    // --- MODIFIED: Added new keys for < 31 min ---
+                    acc[month] = { totalWait: 0, totalCount: 0, count_le_45: 0, 'sum_08.00–09.59': 0, 'count_08.00–09.59': 0, 'count_lt_31_08-10': 0, 'sum_10.00–11.59': 0, 'count_10.00–11.59': 0, 'count_le_60_10-12': 0, 'sum_12.00–13.59': 0, 'count_12.00–13.59': 0, 'count_le_60_12-14': 0, 'sum_14.00–16.30': 0, 'count_14.00–16.30': 0, 'count_lt_31_14-16.30': 0, };
                 }
                 const s = acc[month];
                 s.totalWait += waitMinutes; s.totalCount++;
                 if (waitMinutes <= 45) s.count_le_45++;
+                // --- MODIFIED: Added new checks ---
+                if (timePeriod === '08.00–09.59' && waitMinutes < 31) s['count_lt_31_08-10']++;
                 if (timePeriod === '10.00–11.59' && waitMinutes <= 60) s['count_le_60_10-12']++;
                 if (timePeriod === '12.00–13.59' && waitMinutes <= 60) s['count_le_60_12-14']++;
+                if (timePeriod === '14.00–16.30' && waitMinutes < 31) s['count_lt_31_14-16.30']++;
+                // --- End of modification ---
                 s[`sum_${timePeriod}`] += waitMinutes; s[`count_${timePeriod}`]++;
                 return acc;
             }, {});
             
+            // --- MODIFIED: Re-ordered return object and added new keys ---
             return Object.keys(summary).sort().map(month => {
                 const s = summary[month];
                 const totalCalculated = s['count_08.00–09.59'] + s['count_10.00–11.59'] + s['count_12.00–13.59'] + s['count_14.00–16.30'];
-                return { 'เดือน': convertToThaiMonthYear(month), 'จำนวนผู้ป่วยทั้งหมด': totalPatientsAll[month] || 0, 'จำนวนผู้ป่วยที่นำมาคำนวณ': totalCalculated, 'ระยะเวลารอคอยเฉลี่ยทั้งวัน': s.totalCount > 0 ? parseFloat((s.totalWait / s.totalCount).toFixed(2)) : 0, 'จำนวนผู้ป่วย (<= 45 นาที)': s.count_le_45, 'เฉลี่ย (นาที) 08-10': s['count_08.00–09.59'] > 0 ? parseFloat((s['sum_08.00–09.59'] / s['count_08.00–09.59']).toFixed(2)) : 0, 'จำนวนผู้ป่วย 08-10': s['count_08.00–09.59'], 'เฉลี่ย (นาที) 10-12': s['count_10.00–11.59'] > 0 ? parseFloat((s['sum_10.00–11.59'] / s['count_10.00–11.59']).toFixed(2)) : 0, 'จำนวนผู้ป่วย 10-12': s['count_10.00–11.59'], 'จำนวนผู้ป่วย (<= 60 นาที) 10-12': s['count_le_60_10-12'], 'เฉลี่ย (นาที) 12-14': s['count_12.00–13.59'] > 0 ? parseFloat((s['sum_12.00–13.59'] / s['count_12.00–13.59']).toFixed(2)) : 0, 'จำนวนผู้ป่วย 12-14': s['count_12.00–13.59'], 'จำนวนผู้ป่วย (<= 60 นาที) 12-14': s['count_le_60_12-14'], 'เฉลี่ย (นาที) 14-16.30': s['count_14.00–16.30'] > 0 ? parseFloat((s['sum_14.00–16.30'] / s['count_14.00–16.30']).toFixed(2)) : 0, 'จำนวนผู้ป่วย 14-16.30': s['count_14.00–16.30'], };
+                return { 
+                    'เดือน': convertToThaiMonthYear(month), 
+                    'จำนวนผู้ป่วยทั้งหมด': totalPatientsAll[month] || 0, 
+                    'จำนวนผู้ป่วยที่นำมาคำนวณ': totalCalculated, 
+                    'ระยะเวลารอคอยเฉลี่ยทั้งวัน': s.totalCount > 0 ? parseFloat((s.totalWait / s.totalCount).toFixed(2)) : 0, 
+                    'จำนวนผู้ป่วย (<= 45 นาที)': s.count_le_45, 
+                    
+                    'เฉลี่ย (นาที) 08-10': s['count_08.00–09.59'] > 0 ? parseFloat((s['sum_08.00–09.59'] / s['count_08.00–09.59']).toFixed(2)) : 0, 
+                    'จำนวนผู้ป่วย 08-10': s['count_08.00–09.59'], 
+                    'จำนวนผู้ป่วย (< 31 นาที) 08-10': s['count_lt_31_08-10'], 
+                    
+                    'เฉลี่ย (นาที) 10-12': s['count_10.00–11.59'] > 0 ? parseFloat((s['sum_10.00–11.59'] / s['count_10.00–11.59']).toFixed(2)) : 0, 
+                    'จำนวนผู้ป่วย 10-12': s['count_10.00–11.59'], 
+                    'จำนวนผู้ป่วย (<= 60 นาที) 10-12': s['count_le_60_10-12'], 
+                    
+                    'เฉลี่ย (นาที) 12-14': s['count_12.00–13.59'] > 0 ? parseFloat((s['sum_12.00–13.59'] / s['count_12.00–13.59']).toFixed(2)) : 0, 
+                    'จำนวนผู้ป่วย 12-14': s['count_12.00–13.59'], 
+                    'จำนวนผู้ป่วย (<= 60 นาที) 12-14': s['count_le_60_12-14'], 
+                    
+                    'เฉลี่ย (นาที) 14-16.30': s['count_14.00–16.30'] > 0 ? parseFloat((s['sum_14.00–16.30'] / s['count_14.00–16.30']).toFixed(2)) : 0, 
+                    'จำนวนผู้ป่วย 14-16.30': s['count_14.00–16.30'],
+                    'จำนวนผู้ป่วย (< 31 นาที) 14-16.30': s['count_lt_31_14-16.30'],
+                };
             });
+            // --- End of modification ---
         }
 
         // --- UI Display Logic ---
@@ -437,14 +466,73 @@
             const table = document.createElement('table');
             table.className = 'w-full text-sm text-left text-gray-700';
             const thead = document.createElement('thead');
-            thead.className = 'text-xs text-white uppercase bg-gradient-to-r from-sky-600 to-cyan-500';
+            // --- MODIFIED: Removed default gradient ---
+            thead.className = 'text-xs text-gray-700 uppercase';
             const tbody = document.createElement('tbody');
             if (reportData.length === 0) { resultContainer.innerHTML = ''; return; }
             const headers = Object.keys(reportData[0]);
             const headerRow = document.createElement('tr');
-            headers.forEach(headerText => { const th = document.createElement('th'); th.scope = 'col'; th.className = 'px-4 py-3 text-center'; th.textContent = headerText.replace(/ /g, '\u00A0'); headerRow.appendChild(th); });
+            
+            // --- MODIFIED: Logic for coloring headers ---
+            headers.forEach(headerText => { 
+                const th = document.createElement('th'); 
+                th.scope = 'col'; 
+                th.textContent = headerText.replace(/ /g, '\u00A0'); 
+
+                let thClasses = 'px-4 py-3 text-center text-xs uppercase ';
+                if (headerText.includes('08-10')) {
+                    thClasses += 'bg-blue-100 text-blue-900';
+                } else if (headerText.includes('10-12')) {
+                    thClasses += 'bg-green-100 text-green-900';
+                } else if (headerText.includes('12-14')) {
+                    thClasses += 'bg-yellow-100 text-yellow-900';
+                } else if (headerText.includes('14-16.30')) {
+                    thClasses += 'bg-rose-100 text-rose-900';
+                } else {
+                    thClasses += 'bg-gradient-to-r from-sky-600 to-cyan-500 text-white';
+                }
+                th.className = thClasses;
+                
+                headerRow.appendChild(th); 
+            });
+            // --- End of modification ---
+            
             thead.appendChild(headerRow);
-            reportData.forEach(rowData => { const row = document.createElement('tr'); row.className = 'bg-white border-b hover:bg-sky-50 transition-colors duration-200'; headers.forEach(header => { const td = document.createElement('td'); td.className = 'px-4 py-3 text-center'; td.textContent = rowData[header]; if (header !== 'เดือน' || !isNaN(rowData[header])) { td.classList.add('text-right'); } row.appendChild(td); }); tbody.appendChild(row); });
+            
+            reportData.forEach(rowData => { 
+                // --- MODIFIED: Changed row hover effect ---
+                const row = document.createElement('tr'); 
+                row.className = 'border-b transition-all duration-200 hover:brightness-95'; 
+                
+                headers.forEach(header => { 
+                    const td = document.createElement('td'); 
+                    td.textContent = rowData[header]; 
+                    
+                    // --- MODIFIED: Logic for coloring cells ---
+                    let tdClasses = 'px-4 py-3 text-center ';
+                    if (header.includes('08-10')) {
+                        tdClasses += 'bg-blue-50';
+                    } else if (header.includes('10-12')) {
+                        tdClasses += 'bg-green-50';
+                    } else if (header.includes('12-14')) {
+                        tdClasses += 'bg-yellow-50';
+                    } else if (header.includes('14-16.30')) {
+                        tdClasses += 'bg-rose-50';
+                    } else {
+                        tdClasses += 'bg-white'; // Default cell bg
+                    }
+                    
+                    if (header !== 'เดือน' || !isNaN(rowData[header])) { 
+                        tdClasses += ' text-right'; 
+                    }
+                    td.className = tdClasses;
+                    // --- End of modification ---
+                    
+                    row.appendChild(td); 
+                }); 
+                tbody.appendChild(row); 
+            });
+            
             table.appendChild(thead);
             table.appendChild(tbody);
             resultContainer.innerHTML = '';
@@ -459,3 +547,4 @@
     </script>
 </body>
 </html>
+
