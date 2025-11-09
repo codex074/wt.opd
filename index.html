@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>โปรแกรมสรุปข้อมูลระยะเวลารอคอยรับยา</title>
-    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts for Thai font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
     <style>
         body {
             font-family: 'Sarabun', sans-serif;
@@ -143,13 +144,11 @@
 <body class="bg-gradient-to-br from-sky-50 to-blue-100 text-gray-800 flex flex-col items-center min-h-screen p-4 sm:p-6 md:p-8">
 
     <div class="w-full max-w-7xl bg-white rounded-xl shadow-lg p-6 sm:p-8">
-        <!-- Header -->
         <header class="text-center mb-6 animate-fadeIn" style="animation-delay: 100ms;">
             <h1 class="text-2xl sm:text-3xl font-bold text-sky-800">📊 โปรแกรมสรุปข้อมูลระยะเวลารอคอยรับยา</h1>
             <p class="text-gray-500 mt-2">อัปโหลดไฟล์ Excel เพื่อสร้างรายงานสรุปผลได้อย่างรวดเร็ว</p>
         </header>
 
-        <!-- How to Use Section -->
         <div class="bg-gradient-to-r from-teal-50 to-cyan-50 border-l-4 border-teal-500 text-teal-800 p-4 rounded-md mb-6 shadow-sm animate-fadeIn" role="alert" style="animation-delay: 200ms;">
             <h3 class="font-bold mb-2">คำแนะนำการใช้งาน</h3>
             <p>ไฟล์ Excel ของคุณต้องมีคอลัมน์ต่อไปนี้ (ชื่อต้องตรงกัน):</p>
@@ -161,19 +160,17 @@
             </ul>
         </div>
         
-        <!-- NEW: Filter Conditions Section -->
         <div class="bg-gradient-to-r from-yellow-50 to-amber-50 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-md mb-6 shadow-sm animate-fadeIn" role="alert" style="animation-delay: 250ms;">
             <h3 class="font-bold mb-2">💡 เงื่อนไขการกรองข้อมูล</h3>
             <p class="text-sm">แถวข้อมูลที่จะถูกนำไปคำนวณในตารางสรุปผล ("จำนวนผู้ป่วยที่นำมาคำนวณ") ต้องผ่านเงื่อนไขทุกข้อดังนี้:</p>
             <ul class="list-disc list-inside mt-2 text-sm">
                 <li>มีข้อมูล <code class="bg-yellow-100/60 px-1 rounded">วันที่ตรวจ</code>, <code class="bg-yellow-100/60 px-1 rounded">เวลาออกคิว</code>, และ <code class="bg-yellow-100/60 px-1 rounded">เวลาเรียกคิว</code> ครบถ้วน</li>
-                <li><code class="bg-yellow-100/60 px-1 rounded">ประเภทคิว</code> ต้องไม่ขึ้นต้นด้วย 'พ'</li>
+                <li><code class="bg-yellow-100/60 px-1 rounded">ประเภทคิว</code> ต้องเป็นประเภทที่ถูกเลือกในตัวกรองด้านล่าง</li>
                 <li><code class="bg-yellow-100/60 px-1 rounded">ระยะเวลารอคอย</code> (เวลาเรียกคิว - เวลาออกคิว) ต้องอยู่ระหว่าง <strong>0 - 210 นาที</strong> (3.5 ชั่วโมง)</li>
                 <li><code class="bg-yellow-100/60 px-1 rounded">เวลาออกคิว</code> ต้องอยู่ในช่วงเวลาทำการ (08:00 - 16:30 น.)</li>
             </ul>
         </div>
 
-        <!-- Drop Zone -->
         <div id="drop-zone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 sm:p-12 text-center cursor-pointer transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl hover:border-sky-400 hover:bg-white animate-fadeIn" style="animation-delay: 300ms;">
              <div class="flex flex-col items-center text-gray-500 pointer-events-none">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mb-3 text-sky-500 animate-pulseScale" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -185,19 +182,37 @@
             </div>
         </div>
 
-        <!-- Status & Download Button -->
         <div class="text-center my-4 min-h-[50px] flex items-center justify-center flex-col">
             <div id="status" class="font-semibold"></div>
         </div>
+        
+        <div id="queue-filter-section" class="hidden animate-fadeIn bg-white p-6 rounded-lg shadow-md border border-gray-200 mt-6">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
+                <h3 class="text-lg font-bold text-sky-800">⚙️ เลือกประเภทคิวที่ต้องการคำนวณ</h3>
+                <button id="reprocess-btn" class="bg-sky-600 text-white font-bold py-2 px-5 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-sky-700 shadow hover:shadow-lg flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101A7.002 7.002 0 0112 4c3.866 0 7 3.134 7 7s-3.134 7-7 7-7-3.134-7-7c0-1.554.512-2.986 1.38-4.161L4.13 7.828A4.99 4.99 0 004 11c0 2.761 2.239 5 5 5s5-2.239 5-5-2.239-5-5-5a4.96 4.96 0 00-3.418 1.342L9 9H5V5l1.379 1.379A6.969 6.969 0 0111 4c3.314 0 6 2.686 6 6s-2.686 6-6 6-6-2.686-6-6c0-1.284.343-2.48.95-3.527V3a1 1 0 01-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    ประมวลผลใหม่
+                </button>
+            </div>
+            <div class="mb-4 border-b pb-4">
+                <label class="flex items-center space-x-3 cursor-pointer select-none">
+                    <input type="checkbox" id="select-all-queues" class="h-5 w-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500" checked />
+                    <span class="font-semibold text-gray-700">เลือกทั้งหมด / ยกเลิกทั้งหมด</span>
+                </label>
+            </div>
+            <div id="queue-type-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-48 overflow-y-auto pr-2">
+                </div>
+        </div>
 
-        <!-- Inspector Section -->
+
         <div id="inspector-section" class="hidden animate-fadeIn">
             <h2 class="text-xl font-bold text-gray-700 mt-6 mb-3">🔍 ตัวตรวจสอบข้อมูล (5 แถวแรก)</h2>
             <p class="text-sm text-gray-600 mb-4">ตารางนี้แสดงให้เห็นว่าโปรแกรมอ่านและประมวลผลข้อมูลดิบจากไฟล์ Excel ของคุณอย่างไร เพื่อช่วยวินิจฉัยปัญหา</p>
             <div id="inspector-container" class="overflow-x-auto mb-8"></div>
         </div>
 
-        <!-- Result Section -->
         <div id="result-section" class="hidden animate-fadeIn">
             <h2 class="text-xl font-bold text-gray-700 mt-6 mb-3">สรุปผลการประมวลผล</h2>
             <button id="download-btn" class="mb-4 bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-green-700 shadow hover:shadow-lg flex items-center gap-2">
@@ -209,6 +224,9 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
@@ -219,6 +237,13 @@
         const resultContainer = document.getElementById('result-container');
         const downloadBtn = document.getElementById('download-btn');
         let finalReportData = [];
+        
+        let originalData = []; // Store the full dataset
+        const queueFilterSection = document.getElementById('queue-filter-section');
+        const queueTypeContainer = document.getElementById('queue-type-container');
+        const selectAllCheckbox = document.getElementById('select-all-queues');
+        const reprocessBtn = document.getElementById('reprocess-btn');
+
 
         // --- Event Listeners ---
         dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('bg-sky-50', 'border-sky-500'); });
@@ -236,11 +261,28 @@
                 XLSX.writeFile(workbook, `resualt-ระยะเวลารอคอย-${dateStr}.xlsx`);
             }
         });
+        
+        reprocessBtn.addEventListener('click', runAnalysis);
+
+        selectAllCheckbox.addEventListener('change', () => {
+            const isChecked = selectAllCheckbox.checked;
+            document.querySelectorAll('.queue-type-checkbox').forEach(cb => {
+                cb.checked = isChecked;
+            });
+        });
+
+        queueTypeContainer.addEventListener('change', (e) => {
+            if (e.target.classList.contains('queue-type-checkbox')) {
+                const allCheckboxes = document.querySelectorAll('.queue-type-checkbox');
+                const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+                selectAllCheckbox.checked = allChecked;
+            }
+        });
+
 
         // --- File Handling ---
         function handleFile(file) {
             if (file && file.name.endsWith('.xlsx')) {
-                // --- THIS IS THE MODIFIED PART ---
                 statusDiv.innerHTML = `
                 <div class="flex items-center justify-center gap-3 text-gray-600">
                     <div class="dot-spinner" style="--uib-size: 2.5rem; --uib-color: #0ea5e9;">
@@ -255,7 +297,11 @@
                     </div>
                     <span class="font-semibold text-lg text-sky-700">กำลังประมวลผลไฟล์...</span>
                 </div>`;
-                // --- END OF MODIFIED PART ---
+                
+                queueFilterSection.classList.add('hidden');
+                queueTypeContainer.innerHTML = '';
+                originalData = [];
+
                 inspectorSection.classList.add('hidden');
                 resultSection.classList.add('hidden');
                 setTimeout(() => processFile(file), 100);
@@ -274,16 +320,9 @@
                     const worksheet = workbook.Sheets[firstSheetName];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: null, raw: false });
 
-                    inspectData(jsonData);
-                    const report = generateReport(jsonData);
-                    finalReportData = report;
+                    originalData = jsonData; 
+                    populateQueueFilters(originalData); // This will call runAnalysis
 
-                    if (report.length > 0) {
-                        statusDiv.innerHTML = `<span class="text-green-600">✅ ประมวลผลสำเร็จ! พบข้อมูลสรุป ${report.length} เดือน</span>`;
-                        displayReport(report);
-                    } else {
-                        showError('⚠️ ไม่พบข้อมูลที่ตรงตามเงื่อนไขเพื่อสร้างรายงานสรุป', 'warn');
-                    }
                 } catch (error) {
                     console.error('Processing Error:', error);
                     showError(`❌ ${error.message}`);
@@ -293,6 +332,86 @@
             reader.readAsArrayBuffer(file);
         }
         
+        function populateQueueFilters(data) {
+            const types = new Set(data.map(row => String(row['ประเภทคิว'] || ' (ว่าง)'))); 
+            const uniqueQueueTypes = [...types].sort();
+
+            queueTypeContainer.innerHTML = ''; 
+            
+            if (uniqueQueueTypes.length === 0) {
+                queueFilterSection.classList.add('hidden');
+                runAnalysis(); 
+                return;
+            }
+
+            uniqueQueueTypes.forEach((type, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-center';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `qtype-${index}`;
+                checkbox.value = type;
+                checkbox.checked = true; // Default to checked
+                checkbox.className = 'queue-type-checkbox h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500';
+
+                const label = document.createElement('label');
+                label.htmlFor = `qtype-${index}`;
+                label.textContent = type;
+                label.className = 'ml-2 text-sm text-gray-700 cursor-pointer';
+
+                wrapper.appendChild(checkbox);
+                wrapper.appendChild(label);
+                queueTypeContainer.appendChild(wrapper);
+            });
+
+            selectAllCheckbox.checked = true;
+            queueFilterSection.classList.remove('hidden');
+
+            runAnalysis();
+        }
+
+        function runAnalysis() {
+            if (originalData.length === 0) return; 
+
+            // 1. Get selected queue types
+            const selectedQueues = Array.from(
+                document.querySelectorAll('.queue-type-checkbox:checked')
+            ).map(cb => cb.value);
+
+            // 2. Filter the original data
+            const filteredData = originalData.filter(row => {
+                const typeString = String(row['ประเภทคิว'] || ' (ว่าง)');
+                return selectedQueues.includes(typeString);
+            });
+
+            // 3. Run inspection and report
+            inspectData(filteredData);
+            const report = generateReport(filteredData);
+            finalReportData = report;
+
+            // 4. Display results
+            if (report.length > 0) {
+                statusDiv.innerHTML = `<span class="text-green-600">✅ ประมวลผลสำเร็จ! (จาก ${filteredData.length} แถว) พบข้อมูลสรุป ${report.length} เดือน</span>`;
+                displayReport(report);
+
+                // *** NEW: SweetAlert on Success ***
+                Swal.fire({
+                  title: 'ประมวลผลสำเร็จ!',
+                  text: `พบข้อมูลสรุป ${report.length} เดือน (จาก ${filteredData.length} แถวที่เลือก)`,
+                  icon: 'success',
+                  timer: 2000,
+                  showConfirmButton: false
+                });
+                
+            } else {
+                statusDiv.innerHTML = ''; 
+                // This will now ALSO show a SweetAlert (warning)
+                showError('⚠️ ไม่พบข้อมูลที่ตรงตามเงื่อนไขเพื่อสร้างรายงานสรุป', 'warn');
+                resultSection.classList.add('hidden'); 
+            }
+        }
+
         // --- Helper Functions ---
         const parseDateWithThaiSupport = (dateInput) => {
             if (dateInput instanceof Date && !isNaN(dateInput)) {
@@ -353,10 +472,15 @@
 
         // --- Data Inspector ---
         function inspectData(data) {
-            if (data.length === 0) return;
+            if (data.length === 0) {
+                 inspectorContainer.innerHTML = '<p class="text-gray-600">ไม่พบข้อมูล 5 แถวแรก (อาจถูกกรองออก)</p>';
+                 inspectorSection.classList.remove('hidden');
+                 return;
+            }
             inspectorSection.classList.remove('hidden');
             let inspectionHTML = '<table class="w-full inspector-table"><thead><tr><th>แถวที่</th><th>วันที่ตรวจ (Raw)</th><th>ปี ค.ศ. (ที่ใช้คำนวณ)</th><th>เวลาออกคิว (Raw)</th><th>เวลาเรียกคิว (Raw)</th><th>ผลการตรวจสอบ</th></tr></thead><tbody>';
             const formatRawValue = val => val === null ? 'NULL' : `${String(val)} (${typeof val})`;
+            
             data.slice(0, 5).forEach((row, index) => {
                 let status = '';
                 const receiptDateAD = parseDateWithThaiSupport(row['วันที่ตรวจ']);
@@ -367,20 +491,16 @@
                 else if (!startTime) { status = 'เวลาออกคิวไม่ถูกต้อง'; }
                 else if (!callTime) { status = 'เวลาเรียกคิวไม่ถูกต้อง'; }
                 else {
-                    const EXCLUDE_TYPES = ['พ'];
-                    if (row['ประเภทคิว'] && EXCLUDE_TYPES.some(ex => String(row['ประเภทคิว']).startsWith(ex))) { status = "ประเภทคิว 'พ' ถูกยกเว้น"; }
+                    const waitMinutes = (callTime.getTime() - startTime.getTime()) / (1000 * 60);
+                    if (waitMinutes < 0 || waitMinutes > 210) { status = `เวลารอ ${waitMinutes.toFixed(0)} นาที (ต้องอยู่ระหว่าง 0-210)`; }
                     else {
-                        const waitMinutes = (callTime.getTime() - startTime.getTime()) / (1000 * 60);
-                        if (waitMinutes < 0 || waitMinutes > 210) { status = `เวลารอ ${waitMinutes.toFixed(0)} นาที (ต้องอยู่ระหว่าง 0-210)`; }
-                        else {
-                            const timePeriod = getTimePeriod(startTime);
-                            if (timePeriod === 'นอกช่วงเวลา') { status = 'อยู่นอกช่วงเวลาทำการ (08:00-16:30)'; }
-                            else { status = 'ผ่านเงื่อนไข'; }
-                        }
+                        const timePeriod = getTimePeriod(startTime);
+                        if (timePeriod === 'นอกช่วงเวลา') { status = 'อยู่นอกช่วงเวลาทำการ (08:00-16:30)'; }
+                        else { status = 'ผ่านเงื่อนไข'; }
                     }
                 }
                 inspectionHTML += `<tr>
-                    <td>${index + 2}</td>
+                    <td>${index + 1} (จากที่กรอง)</td>
                     <td><code class="text-xs">${formatRawValue(row['วันที่ตรวจ'])}</code></td>
                     <td><code class="text-xs font-bold ${receiptDateAD ? 'text-blue-600' : 'status-error'}">${receiptDateAD ? receiptDateAD.getFullYear() : 'N/A'}</code></td>
                     <td><code class="text-xs">${formatRawValue(row['เวลาออกคิว'])}</code></td>
@@ -394,13 +514,14 @@
 
         // --- Core Report Generation Logic ---
         function generateReport(data) {
-            if (data.length === 0) return [];
-            const requiredColumns = ['วันที่ตรวจ', 'เวลาออกคิว', 'เวลาเรียกคิว'];
-            if (!requiredColumns.every(col => col in data[0])) { throw new Error(`ไฟล์ที่อัปโหลดขาดคอลัมน์ที่จำเป็น`); }
+            if (data.length === 0) return []; 
             
-            const EXCLUDE_TYPES = ['พ'];
-            let df = data.filter(row => !row['ประเภทคิว'] || !EXCLUDE_TYPES.some(ex => String(row['ประเภทคิว']).startsWith(ex)));
-            const totalPatientsAll = df.reduce((acc, row) => {
+            const requiredColumns = ['วันที่ตรวจ', 'เวลาออกคิว', 'เวลาเรียกคิว'];
+            if (originalData.length > 0 && !requiredColumns.every(col => col in originalData[0])) { 
+                throw new Error(`ไฟล์ที่อัปโหลดขาดคอลัมน์ที่จำเป็น`); 
+            }
+            
+            const totalPatientsAll = data.reduce((acc, row) => {
                 const receiptDate = parseDateWithThaiSupport(row['วันที่ตรวจ']);
                 if (receiptDate) {
                     const monthKey = `${receiptDate.getFullYear()}-${String(receiptDate.getMonth() + 1).padStart(2, '0')}`;
@@ -409,7 +530,7 @@
                 return acc;
             }, {});
 
-            let processedData = df.map(row => {
+            let processedData = data.map(row => {
                 const receiptDate = parseDateWithThaiSupport(row['วันที่ตรวจ']);
                 const startTime = parseTime(row['เวลาออกคิว'], receiptDate);
                 const callTime = parseTime(row['เวลาเรียกคิว'], receiptDate);
@@ -437,24 +558,21 @@
                 return acc;
             }, {});
             
-            // --- MODIFIED: Added all new calculations and keys ---
             return Object.keys(summary).sort().map(month => {
                 const s = summary[month];
                 const totalCalculated = s['count_10.00–11.59'] + s['count_12.00–13.59'] + s['count_08-10 & 14-16.30'];
                 
-                // Calculations for "over time"
                 const count_gt_60_10_12 = s['count_10.00–11.59'] - s['count_le_60_10-12'];
                 const count_gt_60_12_14 = s['count_12.00–13.59'] - s['count_le_60_12-14'];
                 const count_ge_31_08_10_etc = s['count_08-10 & 14-16.30'] - s['count_lt_31_08-10 & 14-16.30'];
 
-                // Calculations for "percentage"
                 const pct_10_12 = s['count_10.00–11.59'] > 0 ? parseFloat(((s['count_le_60_10-12'] / s['count_10.00–11.59']) * 100).toFixed(2)) : 0;
                 const pct_12_14 = s['count_12.00–13.59'] > 0 ? parseFloat(((s['count_le_60_12-14'] / s['count_12.00–13.59']) * 100).toFixed(2)) : 0;
                 const pct_08_10_etc = s['count_08-10 & 14-16.30'] > 0 ? parseFloat(((s['count_lt_31_08-10 & 14-16.30'] / s['count_08-10 & 14-16.30']) * 100).toFixed(2)) : 0;
 
                 return { 
                     'เดือน': convertToThaiMonthYear(month), 
-                    'จำนวนผู้ป่วยทั้งหมด': totalPatientsAll[month] || 0, 
+                    'จำนวนผู้ป่วยทั้งหมด (ตามคิวที่เลือก)': totalPatientsAll[month] || 0, 
                     'จำนวนผู้ป่วยที่นำมาคำนวณ': totalCalculated, 
                     'ระยะเวลารอคอยเฉลี่ยทั้งวัน': s.totalCount > 0 ? parseFloat((s.totalWait / s.totalCount).toFixed(2)) : 0, 
                     'จำนวนผู้ป่วย (<= 45 นาที)': s.count_le_45, 
@@ -478,7 +596,6 @@
                     '(%) ภายในเวลา 08-10 & 14-16.30': pct_08_10_etc,
                 };
             });
-            // --- End of modification ---
         }
 
         // --- UI Display Logic ---
@@ -523,13 +640,11 @@
                     const td = document.createElement('td'); 
                     let content = rowData[header];
                     
-                    // --- MODIFIED: Add '%' sign to percentage columns ---
                     if (header.startsWith('(%')) {
                         content = `${content}%`;
-                        td.classList.add('font-bold'); // Make percentage bold
+                        td.classList.add('font-bold'); 
                     }
                     td.textContent = content; 
-                    // --- End of modification ---
 
                     let tdClasses = 'px-4 py-3 text-center ';
                     if (header.includes('08-10 & 14-16.30')) {
@@ -539,7 +654,7 @@
                     } else if (header.includes('12-14')) {
                         tdClasses += 'bg-yellow-50';
                     } else {
-                        tdClasses += 'bg-white'; // Default cell bg
+                        tdClasses += 'bg-white';
                     }
                     
                     if (header !== 'เดือน' || !isNaN(rowData[header])) { 
@@ -558,10 +673,24 @@
             resultContainer.appendChild(table);
         }
         
+        // --- *** MODIFIED: Added SweetAlert to showError *** ---
         function showError(message, type = 'error') {
             const colorClass = type === 'warn' ? 'text-amber-600' : 'text-red-600';
             statusDiv.innerHTML = `<span class="${colorClass}">${message}</span>`;
-            inspectorSection.classList.remove('hidden'); // Show inspector on error too
+            inspectorSection.classList.remove('hidden'); 
+
+            // SweetAlert on Error/Warning
+            const iconType = type === 'warn' ? 'warning' : 'error';
+            // Clean up the message for the alert (remove emoji)
+            const alertMessage = message.replace(/❌|⚠️/g, '').trim(); 
+            
+            Swal.fire({
+                title: iconType === 'error' ? 'เกิดข้อผิดพลาด' : (type === 'warn' ? 'ไม่พบข้อมูล' : 'แจ้งเตือน'),
+                text: alertMessage,
+                icon: iconType,
+                timer: 2500,
+                showConfirmButton: false
+            });
         }
     </script>
 </body>
