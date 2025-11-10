@@ -139,6 +139,18 @@
         .inspector-table th { background-color: #f1f5f9; }
         .status-ok { color: #16a34a; }
         .status-error { color: #dc2626; font-weight: 600; }
+        
+        /* --- *** NEW: Improved table header stickiness *** --- */
+        #result-container {
+            max-height: 60vh; /* กำหนดความสูงสูงสุดให้ตาราง */
+            overflow-y: auto;
+            position: relative; /*
+        }
+        #result-container thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-sky-50 to-blue-100 text-gray-800 flex flex-col items-center min-h-screen p-4 sm:p-6 md:p-8">
@@ -158,6 +170,8 @@
                 ดูข้อมูลดิบ (Queue)
             </a>
         </div>
+
+
         <div class="bg-gradient-to-r from-teal-50 to-cyan-50 border-l-4 border-teal-500 text-teal-800 p-4 rounded-md mb-6 shadow-sm animate-fadeIn" role="alert" style="animation-delay: 200ms;">
             <h3 class="font-bold mb-2">คำแนะนำการใช้งาน</h3>
             <p>ไฟล์ Excel ของคุณต้องมีคอลัมน์ต่อไปนี้ (ชื่อต้องตรงกัน):</p>
@@ -608,6 +622,7 @@
         }
 
         // --- UI Display Logic ---
+        // *** THIS ENTIRE FUNCTION HAS BEEN MODIFIED ***
         function displayReport(reportData) {
             resultSection.classList.remove('hidden');
             const table = document.createElement('table');
@@ -624,7 +639,7 @@
                 th.scope = 'col'; 
                 th.textContent = headerText.replace(/ /g, '\u00A0'); 
 
-                let thClasses = 'px-4 py-3 text-center text-xs uppercase ';
+                let thClasses = 'px-4 py-3 text-center text-xs uppercase font-medium '; // Added font-medium
                 if (headerText.includes('08-10 & 14-16.30')) {
                     thClasses += 'bg-blue-100 text-blue-900';
                 } else if (headerText.includes('10-12')) {
@@ -632,9 +647,15 @@
                 } else if (headerText.includes('12-14')) {
                     thClasses += 'bg-yellow-100 text-yellow-900';
                 } else {
-                    thClasses += 'bg-gradient-to-r from-sky-600 to-cyan-500 text-white';
+                    // Changed from gradient to a cleaner slate color
+                    thClasses += 'bg-slate-100 text-slate-800';
                 }
                 th.className = thClasses;
+                
+                // Add vertical border for group starts
+                if (headerText.startsWith('เฉลี่ย (นาที) 10-12') || headerText.startsWith('เฉลี่ย (นาที) 12-14') || headerText.startsWith('เฉลี่ย (นาที) 08-10')) {
+                    th.classList.add('border-l-2', 'border-gray-300');
+                }
                 
                 headerRow.appendChild(th); 
             });
@@ -643,7 +664,8 @@
             
             reportData.forEach(rowData => { 
                 const row = document.createElement('tr'); 
-                row.className = 'border-b transition-all duration-200 hover:brightness-95'; 
+                // Added even:bg-gray-50 (zebra) and improved hover
+                row.className = 'border-b even:bg-gray-50 hover:bg-sky-100 transition-colors duration-150'; 
                 
                 headers.forEach(header => { 
                     const td = document.createElement('td'); 
@@ -655,20 +677,18 @@
                     }
                     td.textContent = content; 
 
-                    let tdClasses = 'px-4 py-3 text-center ';
-                    if (header.includes('08-10 & 14-16.30')) {
-                        tdClasses += 'bg-blue-50';
-                    } else if (header.includes('10-12')) {
-                        tdClasses += 'bg-green-50';
-                    } else if (header.includes('12-14')) {
-                        tdClasses += 'bg-yellow-50';
-                    } else {
-                        tdClasses += 'bg-white';
-                    }
+                    // Removed all background color logic, letting the TR handle it
+                    let tdClasses = 'px-4 py-3 text-center';
                     
-                    if (header !== 'เดือน' || !isNaN(rowData[header])) { 
+                    if (header !== 'เดือน') { 
                         tdClasses += ' text-right'; 
                     }
+                    
+                    // Add vertical border for group starts
+                    if (header.startsWith('เฉลี่ย (นาที) 10-12') || header.startsWith('เฉลี่ย (นาที) 12-14') || header.startsWith('เฉลี่ย (นาที) 08-10')) {
+                        td.classList.add('border-l-2', 'border-gray-300');
+                    }
+                    
                     td.className = tdClasses;
                     
                     row.appendChild(td); 
@@ -682,15 +702,14 @@
             resultContainer.appendChild(table);
         }
         
-        // --- MODIFIED: Added SweetAlert to showError ---
+        // --- END OF MODIFIED FUNCTION ---
+        
         function showError(message, type = 'error') {
             const colorClass = type === 'warn' ? 'text-amber-600' : 'text-red-600';
             statusDiv.innerHTML = `<span class="${colorClass}">${message}</span>`;
             inspectorSection.classList.remove('hidden'); 
 
-            // SweetAlert on Error/Warning
             const iconType = type === 'warn' ? 'warning' : 'error';
-            // Clean up the message for the alert (remove emoji)
             const alertMessage = message.replace(/❌|⚠️/g, '').trim(); 
             
             Swal.fire({
