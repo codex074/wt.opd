@@ -149,6 +149,15 @@
             <p class="text-gray-500 mt-2">อัปโหลดไฟล์ Excel เพื่อสร้างรายงานสรุปผลได้อย่างรวดเร็ว</p>
         </header>
 
+        <div class="text-center mb-6 animate-fadeIn" style="animation-delay: 150ms;">
+            <a href="http://172.17.1.76:3005/queue" target="_blank" rel="noopener noreferrer" 
+               class="inline-flex items-center gap-2 bg-gray-100 text-gray-700 font-medium py-2 px-4 rounded-lg shadow-sm transition-all hover:bg-gray-200 hover:shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                ดูข้อมูลดิบ (Queue)
+            </a>
+        </div>
         <div class="bg-gradient-to-r from-teal-50 to-cyan-50 border-l-4 border-teal-500 text-teal-800 p-4 rounded-md mb-6 shadow-sm animate-fadeIn" role="alert" style="animation-delay: 200ms;">
             <h3 class="font-bold mb-2">คำแนะนำการใช้งาน</h3>
             <p>ไฟล์ Excel ของคุณต้องมีคอลัมน์ต่อไปนี้ (ชื่อต้องตรงกัน):</p>
@@ -395,7 +404,7 @@
                 statusDiv.innerHTML = `<span class="text-green-600">✅ ประมวลผลสำเร็จ! (จาก ${filteredData.length} แถว) พบข้อมูลสรุป ${report.length} เดือน</span>`;
                 displayReport(report);
 
-                // *** NEW: SweetAlert on Success ***
+                // SweetAlert on Success
                 Swal.fire({
                   title: 'ประมวลผลสำเร็จ!',
                   text: `พบข้อมูลสรุป ${report.length} เดือน (จาก ${filteredData.length} แถวที่เลือก)`,
@@ -673,7 +682,7 @@
             resultContainer.appendChild(table);
         }
         
-        // --- *** MODIFIED: Added SweetAlert to showError *** ---
+        // --- MODIFIED: Added SweetAlert to showError ---
         function showError(message, type = 'error') {
             const colorClass = type === 'warn' ? 'text-amber-600' : 'text-red-600';
             statusDiv.innerHTML = `<span class="${colorClass}">${message}</span>`;
