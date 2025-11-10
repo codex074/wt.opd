@@ -140,11 +140,11 @@
         .status-ok { color: #16a34a; }
         .status-error { color: #dc2626; font-weight: 600; }
         
-        /* --- *** NEW: Improved table header stickiness *** --- */
+        /* --- Improved table header stickiness --- */
         #result-container {
             max-height: 60vh; /* กำหนดความสูงสูงสุดให้ตาราง */
             overflow-y: auto;
-            position: relative; /*
+            position: relative; 
         }
         #result-container thead th {
             position: sticky;
@@ -243,12 +243,36 @@
                 ดาวน์โหลดผลลัพธ์
             </button>
             <div id="result-container" class="overflow-x-auto"></div>
-        </div>
+            
+            <div id="chart-section" class="hidden mt-10 p-6 rounded-lg shadow-md border border-gray-200">
+                <h3 class="text-lg font-bold text-sky-800 mb-4">📈 กราฟแนวโน้มระยะเวลารอคอยเฉลี่ย</h3>
+                <div class="mb-4 border-b pb-4">
+                    <label class="flex items-center space-x-3 cursor-pointer select-none">
+                        <input type="checkbox" id="select-all-months" class="h-5 w-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500" checked />
+                        <span class="font-semibold text-gray-700">เลือกทั้งหมด / ยกเลิกทั้งหมด</span>
+                    </label>
+                </div>
+                <div id="chart-month-selector" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-48 overflow-y-auto pr-2 mb-4">
+                    </div>
+                <button id="generate-chart-btn" class="bg-blue-600 text-white font-bold py-2 px-5 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-blue-700 shadow hover:shadow-lg flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+                        <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+                    </svg>
+                    สร้างกราฟ
+                </button>
+                <div class="mt-6">
+                    <canvas id="wait-time-chart"></canvas>
+                </div>
+            </div>
+            </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         const dropZone = document.getElementById('drop-zone');
@@ -266,6 +290,14 @@
         const queueTypeContainer = document.getElementById('queue-type-container');
         const selectAllCheckbox = document.getElementById('select-all-queues');
         const reprocessBtn = document.getElementById('reprocess-btn');
+
+        // --- *** NEW: Chart Elements *** ---
+        const chartSection = document.getElementById('chart-section');
+        const chartMonthSelector = document.getElementById('chart-month-selector');
+        const selectAllMonthsCheckbox = document.getElementById('select-all-months');
+        const generateChartBtn = document.getElementById('generate-chart-btn');
+        let myLineChart = null; // To store the chart instance
+        // --- *** END NEW *** ---
 
 
         // --- Event Listeners ---
@@ -302,6 +334,25 @@
             }
         });
 
+        // --- *** NEW: Chart Event Listeners *** ---
+        generateChartBtn.addEventListener('click', generateLineChart);
+        
+        selectAllMonthsCheckbox.addEventListener('change', () => {
+            const isChecked = selectAllMonthsCheckbox.checked;
+            document.querySelectorAll('.month-chart-checkbox').forEach(cb => {
+                cb.checked = isChecked;
+            });
+        });
+
+        chartMonthSelector.addEventListener('change', (e) => {
+            if (e.target.classList.contains('month-chart-checkbox')) {
+                const allCheckboxes = document.querySelectorAll('.month-chart-checkbox');
+                const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+                selectAllMonthsCheckbox.checked = allChecked;
+            }
+        });
+        // --- *** END NEW *** ---
+
 
         // --- File Handling ---
         function handleFile(file) {
@@ -327,6 +378,9 @@
 
                 inspectorSection.classList.add('hidden');
                 resultSection.classList.add('hidden');
+                chartSection.classList.add('hidden'); // <-- NEW: Hide chart
+                if (myLineChart) { myLineChart.destroy(); } // <-- NEW: Destroy old chart
+                
                 setTimeout(() => processFile(file), 100);
             } else {
                 showError('❌ โปรดเลือกไฟล์ .xlsx เท่านั้น');
@@ -397,28 +451,23 @@
         function runAnalysis() {
             if (originalData.length === 0) return; 
 
-            // 1. Get selected queue types
             const selectedQueues = Array.from(
                 document.querySelectorAll('.queue-type-checkbox:checked')
             ).map(cb => cb.value);
 
-            // 2. Filter the original data
             const filteredData = originalData.filter(row => {
                 const typeString = String(row['ประเภทคิว'] || ' (ว่าง)');
                 return selectedQueues.includes(typeString);
             });
 
-            // 3. Run inspection and report
             inspectData(filteredData);
             const report = generateReport(filteredData);
             finalReportData = report;
 
-            // 4. Display results
             if (report.length > 0) {
                 statusDiv.innerHTML = `<span class="text-green-600">✅ ประมวลผลสำเร็จ! (จาก ${filteredData.length} แถว) พบข้อมูลสรุป ${report.length} เดือน</span>`;
-                displayReport(report);
+                displayReport(report); // This will now also populate chart selectors
 
-                // SweetAlert on Success
                 Swal.fire({
                   title: 'ประมวลผลสำเร็จ!',
                   text: `พบข้อมูลสรุป ${report.length} เดือน (จาก ${filteredData.length} แถวที่เลือก)`,
@@ -429,9 +478,10 @@
                 
             } else {
                 statusDiv.innerHTML = ''; 
-                // This will now ALSO show a SweetAlert (warning)
                 showError('⚠️ ไม่พบข้อมูลที่ตรงตามเงื่อนไขเพื่อสร้างรายงานสรุป', 'warn');
                 resultSection.classList.add('hidden'); 
+                chartSection.classList.add('hidden'); // <-- NEW: Hide chart
+                if (myLineChart) { myLineChart.destroy(); } // <-- NEW: Destroy old chart
             }
         }
 
@@ -622,7 +672,6 @@
         }
 
         // --- UI Display Logic ---
-        // *** THIS ENTIRE FUNCTION HAS BEEN MODIFIED ***
         function displayReport(reportData) {
             resultSection.classList.remove('hidden');
             const table = document.createElement('table');
@@ -630,7 +679,12 @@
             const thead = document.createElement('thead');
             thead.className = 'text-xs text-gray-700 uppercase';
             const tbody = document.createElement('tbody');
-            if (reportData.length === 0) { resultContainer.innerHTML = ''; return; }
+            if (reportData.length === 0) { 
+                resultContainer.innerHTML = ''; 
+                chartSection.classList.add('hidden'); // <-- NEW
+                if (myLineChart) { myLineChart.destroy(); } // <-- NEW
+                return; 
+            }
             const headers = Object.keys(reportData[0]);
             const headerRow = document.createElement('tr');
             
@@ -639,7 +693,7 @@
                 th.scope = 'col'; 
                 th.textContent = headerText.replace(/ /g, '\u00A0'); 
 
-                let thClasses = 'px-4 py-3 text-center text-xs uppercase font-medium '; // Added font-medium
+                let thClasses = 'px-4 py-3 text-center text-xs uppercase font-medium ';
                 if (headerText.includes('08-10 & 14-16.30')) {
                     thClasses += 'bg-blue-100 text-blue-900';
                 } else if (headerText.includes('10-12')) {
@@ -647,24 +701,22 @@
                 } else if (headerText.includes('12-14')) {
                     thClasses += 'bg-yellow-100 text-yellow-900';
                 } else {
-                    // Changed from gradient to a cleaner slate color
                     thClasses += 'bg-slate-100 text-slate-800';
                 }
                 th.className = thClasses;
                 
-                // Add vertical border for group starts
                 if (headerText.startsWith('เฉลี่ย (นาที) 10-12') || headerText.startsWith('เฉลี่ย (นาที) 12-14') || headerText.startsWith('เฉลี่ย (นาที) 08-10')) {
                     th.classList.add('border-l-2', 'border-gray-300');
                 }
-                
                 headerRow.appendChild(th); 
             });
-            
             thead.appendChild(headerRow);
             
-            reportData.forEach(rowData => { 
+            // --- *** NEW: Clear and populate chart month selector *** ---
+            chartMonthSelector.innerHTML = ''; // Clear old checkboxes
+            
+            reportData.forEach((rowData, index) => { 
                 const row = document.createElement('tr'); 
-                // Added even:bg-gray-50 (zebra) and improved hover
                 row.className = 'border-b even:bg-gray-50 hover:bg-sky-100 transition-colors duration-150'; 
                 
                 headers.forEach(header => { 
@@ -677,37 +729,139 @@
                     }
                     td.textContent = content; 
 
-                    // Removed all background color logic, letting the TR handle it
                     let tdClasses = 'px-4 py-3 text-center';
-                    
                     if (header !== 'เดือน') { 
                         tdClasses += ' text-right'; 
                     }
-                    
-                    // Add vertical border for group starts
                     if (header.startsWith('เฉลี่ย (นาที) 10-12') || header.startsWith('เฉลี่ย (นาที) 12-14') || header.startsWith('เฉลี่ย (นาที) 08-10')) {
                         td.classList.add('border-l-2', 'border-gray-300');
                     }
-                    
                     td.className = tdClasses;
-                    
                     row.appendChild(td); 
                 }); 
                 tbody.appendChild(row); 
+                
+                // --- *** NEW: Add checkbox for this month to chart selector *** ---
+                const monthName = rowData['เดือน'];
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-center';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `month-chk-${index}`;
+                checkbox.value = index; // Use index to easily find data in finalReportData
+                checkbox.checked = true;
+                checkbox.className = 'month-chart-checkbox h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500';
+                const label = document.createElement('label');
+                label.htmlFor = `month-chk-${index}`;
+                label.textContent = monthName;
+                label.className = 'ml-2 text-sm text-gray-700 cursor-pointer';
+                wrapper.appendChild(checkbox);
+                wrapper.appendChild(label);
+                chartMonthSelector.appendChild(wrapper);
+                // --- *** END NEW *** ---
             });
             
             table.appendChild(thead);
             table.appendChild(tbody);
             resultContainer.innerHTML = '';
             resultContainer.appendChild(table);
+            
+            // --- *** NEW: Show chart section and auto-generate first chart *** ---
+            chartSection.classList.remove('hidden');
+            selectAllMonthsCheckbox.checked = true;
+            generateLineChart(); // Auto-generate chart on first load
+            // --- *** END NEW *** ---
         }
         
-        // --- END OF MODIFIED FUNCTION ---
+        // --- *** NEW: Function to generate the line chart *** ---
+        function generateLineChart() {
+            if (finalReportData.length === 0) return;
+
+            const labels = [];
+            const dataPoints = [];
+            
+            // Find selected month checkboxes
+            const selectedCheckboxes = document.querySelectorAll('.month-chart-checkbox:checked');
+            
+            if (selectedCheckboxes.length === 0) {
+                 Swal.fire({
+                  title: 'ไม่พบข้อมูล',
+                  text: 'กรุณาเลือกอย่างน้อย 1 เดือนเพื่อสร้างกราฟ',
+                  icon: 'warning',
+                  timer: 2500,
+                  showConfirmButton: false
+                });
+                return;
+            }
+
+            // Loop through checkboxes, get the index (stored in value), and pull data
+            selectedCheckboxes.forEach(cb => {
+                const index = parseInt(cb.value, 10);
+                const rowData = finalReportData[index];
+                if (rowData) {
+                    labels.push(rowData['เดือน']);
+                    dataPoints.push(rowData['ระยะเวลารอคอยเฉลี่ยทั้งวัน']);
+                }
+            });
+
+            // Destroy the old chart if it exists
+            if (myLineChart) {
+                myLineChart.destroy();
+            }
+
+            // Create the new chart
+            const ctx = document.getElementById('wait-time-chart').getContext('2d');
+            myLineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'ระยะเวลารอคอยเฉลี่ย (นาที)',
+                        data: dataPoints,
+                        borderColor: 'rgb(2, 132, 199)', // Tailwind sky-600
+                        backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                        fill: true,
+                        tension: 0.1,
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgb(2, 132, 199)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'นาที'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw} นาที`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        // --- *** END NEW FUNCTION *** ---
+        
         
         function showError(message, type = 'error') {
             const colorClass = type === 'warn' ? 'text-amber-600' : 'text-red-600';
             statusDiv.innerHTML = `<span class="${colorClass}">${message}</span>`;
             inspectorSection.classList.remove('hidden'); 
+
+            // --- *** MODIFIED: Also hide chart section on error *** ---
+            chartSection.classList.add('hidden');
+            if (myLineChart) { myLineChart.destroy(); }
+            // --- *** END MODIFICATION *** ---
 
             const iconType = type === 'warn' ? 'warning' : 'error';
             const alertMessage = message.replace(/❌|⚠️/g, '').trim(); 
