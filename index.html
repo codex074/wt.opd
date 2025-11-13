@@ -173,7 +173,7 @@
 
 
         <div class="bg-gradient-to-r from-teal-50 to-cyan-50 border-l-4 border-teal-500 text-teal-800 p-4 rounded-md mb-6 shadow-sm animate-fadeIn" role="alert" style="animation-delay: 200ms;">
-            <h3 class="font-bold mb-2">คำแนะนำการใช้งาน</h3>
+            <h3 class="font-bold mb-2">1. คำแนะนำการใช้งาน</h3>
             <p>ไฟล์ Excel ของคุณต้องมีคอลัมน์ต่อไปนี้ (ชื่อต้องตรงกัน):</p>
             <ul class="list-disc list-inside mt-2 text-sm">
                 <li><code class="bg-teal-100/60 px-1 rounded">วันที่ตรวจ</code></li>
@@ -184,13 +184,20 @@
         </div>
         
         <div class="bg-gradient-to-r from-yellow-50 to-amber-50 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-md mb-6 shadow-sm animate-fadeIn" role="alert" style="animation-delay: 250ms;">
-            <h3 class="font-bold mb-2">💡 เงื่อนไขการกรองข้อมูล</h3>
-            <p class="text-sm">แถวข้อมูลที่จะถูกนำไปคำนวณในตารางสรุปผล ("จำนวนผู้ป่วยที่นำมาคำนวณ") ต้องผ่านเงื่อนไขทุกข้อดังนี้:</p>
-            <ul class="list-disc list-inside mt-2 text-sm">
-                <li>มีข้อมูล <code class="bg-yellow-100/60 px-1 rounded">วันที่ตรวจ</code>, <code class="bg-yellow-100/60 px-1 rounded">เวลาออกคิว</code>, และ <code class="bg-yellow-100/60 px-1 rounded">เวลาเรียกคิว</code> ครบถ้วน</li>
+            <h3 class="font-bold mb-2">2. เงื่อนไขการกรองข้อมูล (Filters)</h3>
+            <p class="text-sm mb-3">แถวข้อมูลที่จะถูกนำไปคำนวณ ต้องผ่านเงื่อนไขทุกข้อดังนี้:</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="min-wait" class="block text-sm font-medium mb-1">ระยะเวลารอคอย (ต่ำสุด) (นาที)</label>
+                    <input type="number" id="min-wait" value="0" class="w-full p-2 border border-yellow-300 rounded-md shadow-sm">
+                </div>
+                <div>
+                    <label for="max-wait" class="block text-sm font-medium mb-1">ระยะเวลารอคอย (สูงสุด) (นาที)</label>
+                    <input type="number" id="max-wait" value="210" class="w-full p-2 border border-yellow-300 rounded-md shadow-sm">
+                </div>
+            </div>
+            <ul class="list-disc list-inside mt-3 text-sm">
                 <li><code class="bg-yellow-100/60 px-1 rounded">ประเภทคิว</code> ต้องเป็นประเภทที่ถูกเลือกในตัวกรองด้านล่าง</li>
-                <li><code class="bg-yellow-100/60 px-1 rounded">ระยะเวลารอคอย</code> (เวลาเรียกคิว - เวลาออกคิว) ต้องอยู่ระหว่าง <strong>0 - 210 นาที</strong> (3.5 ชั่วโมง)</li>
-                <li><code class="bg-yellow-100/60 px-1 rounded">เวลาออกคิว</code> ต้องอยู่ในช่วงเวลาทำการ (08:00 - 16:30 น.)</li>
             </ul>
         </div>
 
@@ -209,30 +216,46 @@
             <div id="status" class="font-semibold"></div>
         </div>
         
-        <div id="queue-filter-section" class="hidden animate-fadeIn bg-white p-6 rounded-lg shadow-md border border-gray-200 mt-6">
-            <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
-                <h3 class="text-lg font-bold text-sky-800">⚙️ เลือกประเภทคิวที่ต้องการคำนวณ</h3>
-                <button id="reprocess-btn" class="bg-sky-600 text-white font-bold py-2 px-5 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-sky-700 shadow hover:shadow-lg flex items-center justify-center gap-2">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <div id="queue-filter-section" class="hidden animate-fadeIn bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h3 class="text-lg font-bold text-sky-800 mb-4">⚙️ 3. เลือกประเภทคิว (สำหรับกรอง)</h3>
+                <div class="mb-4 border-b pb-4">
+                    <label class="flex items-center space-x-3 cursor-pointer select-none">
+                        <input type="checkbox" id="select-all-queues" class="h-5 w-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500" checked />
+                        <span class="font-semibold text-gray-700">เลือกทั้งหมด / ยกเลิกทั้งหมด</span>
+                    </label>
+                </div>
+                <div id="queue-type-container" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-48 overflow-y-auto pr-2">
+                    </div>
+            </div>
+            
+            <div id="time-period-definition-section" class="hidden animate-fadeIn bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h3 class="text-lg font-bold text-sky-800 mb-4">⚙️ 4. กำหนดช่วงเวลา & เกณฑ์ (สำหรับคอลัมน์ตาราง)</h3>
+                <div id="time-period-list" class="space-y-3 max-h-48 overflow-y-auto pr-2">
+                    </div>
+                <button id="add-period-btn" class="mt-4 text-sm bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all hover:bg-green-700 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101A7.002 7.002 0 0112 4c3.866 0 7 3.134 7 7s-3.134 7-7 7-7-3.134-7-7c0-1.554.512-2.986 1.38-4.161L4.13 7.828A4.99 4.99 0 004 11c0 2.761 2.239 5 5 5s5-2.239 5-5-2.239-5-5-5a4.96 4.96 0 00-3.418 1.342L9 9H5V5l1.379 1.379A6.969 6.969 0 0111 4c3.314 0 6 2.686 6 6s-2.686 6-6 6-6-2.686-6-6c0-1.284.343-2.48.95-3.527V3a1 1 0 01-1-1z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
                     </svg>
-                    ประมวลผลใหม่
+                    เพิ่มช่วงเวลา
                 </button>
             </div>
-            <div class="mb-4 border-b pb-4">
-                <label class="flex items-center space-x-3 cursor-pointer select-none">
-                    <input type="checkbox" id="select-all-queues" class="h-5 w-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500" checked />
-                    <span class="font-semibold text-gray-700">เลือกทั้งหมด / ยกเลิกทั้งหมด</span>
-                </label>
-            </div>
-            <div id="queue-type-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-48 overflow-y-auto pr-2">
-                </div>
+        </div>
+
+        <div id="reprocess-section" class="hidden text-center my-6 animate-fadeIn">
+            <button id="reprocess-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-blue-700 shadow-lg text-lg flex items-center justify-center gap-3 mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101A7.002 7.002 0 0112 4c3.866 0 7 3.134 7 7s-3.134 7-7 7-7-3.134-7-7c0-1.554.512-2.986 1.38-4.161L4.13 7.828A4.99 4.99 0 004 11c0 2.761 2.239 5 5 5s5-2.239 5-5-2.239-5-5-5a4.96 4.96 0 00-3.418 1.342L9 9H5V5l1.379 1.379A6.969 6.969 0 0111 4c3.314 0 6 2.686 6 6s-2.686 6-6 6-6-2.686-6-6c0-1.284.343-2.48.95-3.527V3a1 1 0 01-1-1z" clip-rule="evenodd" />
+                </svg>
+                ใช้ตัวกรอง & ประมวลผลตาราง
+            </button>
         </div>
 
 
         <div id="inspector-section" class="hidden animate-fadeIn">
             <h2 class="text-xl font-bold text-gray-700 mt-6 mb-3">🔍 ตัวตรวจสอบข้อมูล (5 แถวแรก)</h2>
-            <p class="text-sm text-gray-600 mb-4">ตารางนี้แสดงให้เห็นว่าโปรแกรมอ่านและประมวลผลข้อมูลดิบจากไฟล์ Excel ของคุณอย่างไร เพื่อช่วยวินิจฉัยปัญหา</p>
+            <p class="text-sm text-gray-600 mb-4">ตารางนี้แสดงให้เห็นว่าโปรแกรมอ่านและประมวลผลข้อมูลดิบจากไฟล์ Excel ของคุณอย่างไร (ข้อมูลนี้ <span class="font-bold">ผ่าน</span> ตัวกรองนาทีและประเภทคิวแล้ว)</p>
             <div id="inspector-container" class="overflow-x-auto mb-8"></div>
         </div>
 
@@ -262,25 +285,9 @@
                     </div>
                     
                     <div id="chart-time-period-selector">
-                        <h4 class="font-semibold text-gray-700 mb-2">2. เลือกช่วงเวลาที่จะแสดง</h4>
-                        <div class="space-y-2 p-4 bg-slate-50 rounded-lg max-h-48 overflow-y-auto">
-                            <label class="flex items-center space-x-3 cursor-pointer select-none">
-                                <input type="checkbox" class="time-period-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="เฉลี่ยทั้งวัน" checked>
-                                <span class="text-sm text-gray-700">เฉลี่ยทั้งวัน (ทุกช่วงเวลา)</span>
-                            </label>
-                            <label class="flex items-center space-x-3 cursor-pointer select-none">
-                                <input type="checkbox" class="time-period-checkbox h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500" value="10.00–11.59" checked>
-                                <span class="text-sm text-gray-700">10.00–11.59 น.</span>
-                            </label>
-                            <label class="flex items-center space-x-3 cursor-pointer select-none">
-                                <input type="checkbox" class="time-period-checkbox h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500" value="12.00–13.59" checked>
-                                <span class="text-sm text-gray-700">12.00–13.59 น.</span>
-                            </label>
-                            <label class="flex items-center space-x-3 cursor-pointer select-none">
-                                <input type="checkbox" class="time-period-checkbox h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500" value="08-10 & 14-16.30" checked>
-                                <span class="text-sm text-gray-700">08-10 & 14-16.30 น.</span>
-                            </label>
-                        </div>
+                        <h4 class="font-semibold text-gray-700 mb-2">2. เลือกช่วงเวลาที่จะแสดง (จากข้อ 4)</h4>
+                        <div id="chart-period-checkbox-container" class="space-y-2 p-4 bg-slate-50 rounded-lg max-h-48 overflow-y-auto">
+                            </div>
                     </div>
                     
                 </div>
@@ -292,9 +299,13 @@
                     </svg>
                     สร้างกราฟ
                 </button>
+                
                 <div class="mt-6">
                     <canvas id="wait-time-chart"></canvas>
                 </div>
+                
+                <div id="chart-legend" class="hidden mt-4 text-sm"></div>
+                
             </div>
             
         </div>
@@ -307,31 +318,56 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
+        // --- UI Elements ---
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
         const statusDiv = document.getElementById('status');
+        
+        // --- Filter Elements ---
+        const minWaitInput = document.getElementById('min-wait');
+        const maxWaitInput = document.getElementById('max-wait');
+        const queueFilterSection = document.getElementById('queue-filter-section');
+        const queueTypeContainer = document.getElementById('queue-type-container');
+        const selectAllCheckbox = document.getElementById('select-all-queues');
+        const timePeriodDefinitionSection = document.getElementById('time-period-definition-section');
+        const timePeriodList = document.getElementById('time-period-list');
+        const addPeriodBtn = document.getElementById('add-period-btn');
+        const reprocessSection = document.getElementById('reprocess-section');
+        const reprocessBtn = document.getElementById('reprocess-btn');
+
+        // --- Output Elements ---
         const inspectorSection = document.getElementById('inspector-section');
         const inspectorContainer = document.getElementById('inspector-container');
         const resultSection = document.getElementById('result-section');
         const resultContainer = document.getElementById('result-container');
         const downloadBtn = document.getElementById('download-btn');
-        let finalReportData = [];
         
-        let originalData = []; // Store the full dataset
-        let detailedProcessedData = []; // Store processed daily data
-        
-        const queueFilterSection = document.getElementById('queue-filter-section');
-        const queueTypeContainer = document.getElementById('queue-type-container');
-        const selectAllCheckbox = document.getElementById('select-all-queues');
-        const reprocessBtn = document.getElementById('reprocess-btn');
-
         // --- Chart Elements ---
         const chartSection = document.getElementById('chart-section');
         const chartMonthSelector = document.getElementById('chart-month-selector');
         const selectAllMonthsCheckbox = document.getElementById('select-all-months');
         const generateChartBtn = document.getElementById('generate-chart-btn');
-        const chartTimePeriodSelector = document.getElementById('chart-time-period-selector');
-        let myLineChart = null; // To store the chart instance
+        const chartPeriodCheckboxContainer = document.getElementById('chart-period-checkbox-container');
+        const chartLegendDiv = document.getElementById('chart-legend');
+        let myLineChart = null; 
+
+        // --- Data Stores ---
+        let originalData = []; 
+        let detailedProcessedData = []; 
+        let finalReportData = [];
+        let dynamicPeriodColors = {}; // To store colors for dynamic periods
+
+        // --- Day Color Config ---
+        const thaiDayAbbr = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+        const dayColorConfig = {
+          0: { name: 'อาทิตย์', color: '#EF4444' }, // red-500
+          1: { name: 'จันทร์', color: '#EAB308' }, // yellow-500
+          2: { name: 'อังคาร', color: '#EC4899' }, // pink-500
+          3: { name: 'พุธ', color: '#22C55E' }, // green-500
+          4: { name: 'พฤหัสบดี', color: '#F97316' }, // orange-500
+          5: { name: 'ศุกร์', color: '#3B82F6' }, // blue-500
+          6: { name: 'เสาร์', color: '#8B5CF6' }  // violet-500
+        };
 
 
         // --- Event Listeners ---
@@ -340,6 +376,7 @@
         dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('bg-sky-50', 'border-sky-500'); if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]); });
         dropZone.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
+        
         downloadBtn.addEventListener('click', () => {
             if (finalReportData.length > 0) {
                 const worksheet = XLSX.utils.json_to_sheet(finalReportData);
@@ -351,7 +388,7 @@
             }
         });
         
-        reprocessBtn.addEventListener('click', runAnalysis);
+        reprocessBtn.addEventListener('click', () => runAnalysis(false)); 
 
         selectAllCheckbox.addEventListener('change', () => {
             const isChecked = selectAllCheckbox.checked;
@@ -368,7 +405,14 @@
             }
         });
 
-        // --- Chart Event Listeners ---
+        addPeriodBtn.addEventListener('click', () => addPeriodInputRow());
+        
+        timePeriodList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-period-btn')) {
+                e.target.closest('.period-row').remove();
+            }
+        });
+
         generateChartBtn.addEventListener('click', generateLineChart);
         
         selectAllMonthsCheckbox.addEventListener('change', () => {
@@ -386,33 +430,31 @@
             }
         });
 
+
         // --- File Handling ---
         function handleFile(file) {
             if (file && file.name.endsWith('.xlsx')) {
                 statusDiv.innerHTML = `
                 <div class="flex items-center justify-center gap-3 text-gray-600">
                     <div class="dot-spinner" style="--uib-size: 2.5rem; --uib-color: #0ea5e9;">
-                        <div class="dot-spinner__dot"></div>
-                        <div class="dot-spinner__dot"></div>
-                        <div class="dot-spinner__dot"></div>
-                        <div class="dot-spinner__dot"></div>
-                        <div class="dot-spinner__dot"></div>
-                        <div class="dot-spinner__dot"></div>
-                        <div class="dot-spinner__dot"></div>
-                        <div class="dot-spinner__dot"></div>
+                        <div class="dot-spinner__dot"></div><div class="dot-spinner__dot"></div><div class="dot-spinner__dot"></div><div class="dot-spinner__dot"></div><div class="dot-spinner__dot"></div><div class="dot-spinner__dot"></div><div class="dot-spinner__dot"></div><div class="dot-spinner__dot"></div>
                     </div>
                     <span class="font-semibold text-lg text-sky-700">กำลังประมวลผลไฟล์...</span>
                 </div>`;
                 
                 queueFilterSection.classList.add('hidden');
-                queueTypeContainer.innerHTML = '';
-                originalData = [];
-                detailedProcessedData = []; 
-
+                timePeriodDefinitionSection.classList.add('hidden');
+                reprocessSection.classList.add('hidden');
                 inspectorSection.classList.add('hidden');
                 resultSection.classList.add('hidden');
                 chartSection.classList.add('hidden'); 
                 if (myLineChart) { myLineChart.destroy(); } 
+                chartLegendDiv.classList.add('hidden');
+                
+                queueTypeContainer.innerHTML = '';
+                timePeriodList.innerHTML = '';
+                originalData = [];
+                detailedProcessedData = []; 
                 
                 setTimeout(() => processFile(file), 100);
             } else {
@@ -431,7 +473,15 @@
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: null, raw: false });
 
                     originalData = jsonData; 
+                    
                     populateQueueFilters(originalData); 
+                    populateDefaultPeriods();
+                    
+                    queueFilterSection.classList.remove('hidden');
+                    timePeriodDefinitionSection.classList.remove('hidden');
+                    reprocessSection.classList.remove('hidden');
+                    
+                    runAnalysis(true); 
 
                 } catch (error) {
                     console.error('Processing Error:', error);
@@ -442,6 +492,50 @@
             reader.readAsArrayBuffer(file);
         }
         
+        // --- Dynamic Period UI Functions ---
+        function addPeriodInputRow(name = '', start = '', end = '', threshold = '') {
+            const row = document.createElement('div');
+            row.className = 'period-row grid grid-cols-6 gap-2 items-center';
+            row.innerHTML = `
+                <input type="text" value="${name}" placeholder="ชื่อช่วงเวลา" class="period-name col-span-2 p-2 border rounded-md text-sm">
+                <input type="time" value="${start}" class="period-start col-span-1 p-2 border rounded-md text-sm">
+                <input type="time" value="${end}" class="period-end col-span-1 p-2 border rounded-md text-sm">
+                <input type="number" value="${threshold}" placeholder="X นาที" class="period-threshold col-span-1 p-2 border rounded-md text-sm" title="เกณฑ์เวลารอ (นาที) (เช่น 20)">
+                <button class="remove-period-btn col-span-1 text-red-500 hover:text-red-700 font-bold text-lg">✖</button>
+            `;
+            timePeriodList.appendChild(row);
+        }
+        
+        // --- *** MODIFIED: New Default Periods *** ---
+        function populateDefaultPeriods() {
+            addPeriodInputRow('08.00-09.59 น.', '08:00', '10:00', '31');
+            addPeriodInputRow('10.00-11.59 น.', '10:00', '12:00', '60');
+            addPeriodInputRow('12.00-13.59 น.', '12:00', '14:00', '60');
+            addPeriodInputRow('14.00-16.30 น.', '14:00', '16:30', '31');
+            addPeriodInputRow('16.30-20.00 น.', '16:30', '20:00', '31');
+        }
+        
+        function getCustomPeriodsFromUI() {
+            const periods = [];
+            document.querySelectorAll('.period-row').forEach(row => {
+                const name = row.querySelector('.period-name').value;
+                const start = row.querySelector('.period-start').value;
+                const end = row.querySelector('.period-end').value;
+                const threshold = parseFloat(row.querySelector('.period-threshold').value);
+                
+                if (name && start && end) {
+                    periods.push({
+                        name: name,
+                        start: parseTimeString(start),
+                        end: parseTimeString(end),
+                        threshold: isNaN(threshold) ? null : threshold 
+                    });
+                }
+            });
+            return periods;
+        }
+
+        
         function populateQueueFilters(data) {
             const types = new Set(data.map(row => String(row['ประเภทคิว'] || ' (ว่าง)'))); 
             const uniqueQueueTypes = [...types].sort();
@@ -450,26 +544,21 @@
             
             if (uniqueQueueTypes.length === 0) {
                 queueFilterSection.classList.add('hidden');
-                runAnalysis(); 
                 return;
             }
 
             uniqueQueueTypes.forEach((type, index) => {
                 const wrapper = document.createElement('div');
-                wrapper.className = 'flex items-center';
-                
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.id = `qtype-${index}`;
                 checkbox.value = type;
                 checkbox.checked = true; 
                 checkbox.className = 'queue-type-checkbox h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500';
-
                 const label = document.createElement('label');
                 label.htmlFor = `qtype-${index}`;
                 label.textContent = type;
                 label.className = 'ml-2 text-sm text-gray-700 cursor-pointer';
-
                 wrapper.appendChild(checkbox);
                 wrapper.appendChild(label);
                 queueTypeContainer.appendChild(wrapper);
@@ -477,32 +566,74 @@
 
             selectAllCheckbox.checked = true;
             queueFilterSection.classList.remove('hidden');
-
-            runAnalysis();
         }
 
-        function runAnalysis() {
+        // --- Main Controller Function ---
+        function runAnalysis(isFirstRun = false) { 
             if (originalData.length === 0) return; 
 
+            // 1. Get all filter values
+            const minWait = parseFloat(minWaitInput.value) || 0;
+            const maxWait = parseFloat(maxWaitInput.value) || Infinity;
+            
             const selectedQueues = Array.from(
                 document.querySelectorAll('.queue-type-checkbox:checked')
             ).map(cb => cb.value);
+            
+            const customPeriods = getCustomPeriodsFromUI();
+            if (customPeriods.length === 0) {
+                 showError('❌ กรุณากำหนดอย่างน้อย 1 ช่วงเวลาในข้อ 4', 'error');
+                 return;
+            }
+            
+            const previouslySelectedMonths = Array.from(
+                document.querySelectorAll('.month-chart-checkbox:checked')
+            ).map(cb => cb.value);
 
+            // 2. Filter raw data by Queue
             const filteredData = originalData.filter(row => {
                 const typeString = String(row['ประเภทคิว'] || ' (ว่าง)');
                 return selectedQueues.includes(typeString);
             });
+            
+            const totalPatientsByMonth = filteredData.reduce((acc, row) => {
+                const receiptDate = parseDateWithThaiSupport(row['วันที่ตรวจ']);
+                if (receiptDate) {
+                    const monthKey = `${receiptDate.getFullYear()}-${String(receiptDate.getMonth() + 1).padStart(2, '0')}`;
+                    acc[monthKey] = (acc[monthKey] || 0) + 1;
+                }
+                return acc;
+            }, {});
 
-            inspectData(filteredData);
-            const report = generateReport(filteredData);
+            // 3. Process data (filter by time/wait, add period name)
+            const processedData = processData(filteredData, minWait, maxWait, customPeriods);
+            detailedProcessedData = processedData; 
+
+            // 4. Run inspector on this processed data
+            inspectData(processedData); 
+
+            // 5. Aggregate for table
+            const report = generateDynamicReport(processedData, customPeriods, totalPatientsByMonth);
             finalReportData = report;
 
             if (report.length > 0) {
                 statusDiv.innerHTML = `<span class="text-green-600">✅ ประมวลผลสำเร็จ! (จาก ${filteredData.length} แถว) พบข้อมูลสรุป ${report.length} เดือน</span>`;
-                displayReport(report); 
+                
+                // 6. Display Table
+                displayDynamicReport(report, customPeriods);
+                
+                // 7. Setup Chart UI
+                populateChartMonthSelector(report, isFirstRun ? null : previouslySelectedMonths);
+                populateChartPeriodSelector(customPeriods);
+                chartSection.classList.remove('hidden'); 
+                
+                // 8. Generate chart ONLY on first run
+                if (isFirstRun) {
+                    generateLineChart(); 
+                }
 
                 Swal.fire({
-                  title: 'ประมวลผลสำเร็จ!',
+                  title: 'ประมวลผลตารางสำเร็จ!',
                   text: `พบข้อมูลสรุป ${report.length} เดือน (จาก ${filteredData.length} แถวที่เลือก)`,
                   icon: 'success',
                   timer: 2000,
@@ -515,8 +646,10 @@
                 resultSection.classList.add('hidden'); 
                 chartSection.classList.add('hidden'); 
                 if (myLineChart) { myLineChart.destroy(); } 
+                chartLegendDiv.classList.add('hidden'); 
             }
         }
+
 
         // --- Helper Functions ---
         const parseDateWithThaiSupport = (dateInput) => {
@@ -559,17 +692,40 @@
             }
             return null;
         };
-
-        const getTimePeriod = (startTime) => {
-            if (!startTime || !(startTime instanceof Date) || isNaN(startTime)) return 'นอกช่วงเวลา';
-            const hour = startTime.getHours();
-            const minute = startTime.getMinutes();
-            if (hour >= 8 && hour < 10) return '08-10 & 14-16.30'; 
-            if (hour >= 10 && hour < 12) return '10.00–11.59';
-            if (hour >= 12 && hour < 14) return '12.00–13.59';
-            if (hour >= 14 && (hour < 16 || (hour === 16 && minute <= 30))) return '08-10 & 14-16.30'; 
-            return 'นอกช่วงเวลา';
+        
+        const parseTimeString = (timeStr) => { // "08:30" -> {h: 8, m: 30}
+            if (!timeStr) return null;
+            const [h, m] = timeStr.split(':').map(Number);
+            return { h, m };
         };
+        
+        const isTimeInRange = (startTime, period) => {
+            const h = startTime.getHours();
+            const m = startTime.getMinutes();
+            const startH = period.start.h;
+            const startM = period.start.m;
+            const endH = period.end.h;
+            const endM = period.end.m;
+
+            const startTimeInMinutes = h * 60 + m;
+            const periodStartInMinutes = startH * 60 + startM;
+            const periodEndInMinutes = endH * 60 + endM;
+
+            if (periodStartInMinutes > periodEndInMinutes) {
+                 return startTimeInMinutes >= periodStartInMinutes || startTimeInMinutes < periodEndInMinutes;
+            }
+            return startTimeInMinutes >= periodStartInMinutes && startTimeInMinutes < periodEndInMinutes;
+        };
+
+        const getPeriodName = (startTime, customPeriods) => {
+            for (const period of customPeriods) {
+                if (isTimeInRange(startTime, period)) {
+                    return period.name;
+                }
+            }
+            return 'นอกช่วงเวลา'; 
+        };
+        
         const convertToThaiMonthYear = (monthStr) => {
             const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
             const [year, month] = monthStr.split('-').map(Number);
@@ -577,149 +733,155 @@
         };
 
         // --- Data Inspector ---
-        function inspectData(data) {
+        function inspectData(data) { 
             if (data.length === 0) {
                  inspectorContainer.innerHTML = '<p class="text-gray-600">ไม่พบข้อมูล 5 แถวแรก (อาจถูกกรองออก)</p>';
                  inspectorSection.classList.remove('hidden');
                  return;
             }
             inspectorSection.classList.remove('hidden');
-            let inspectionHTML = '<table class="w-full inspector-table"><thead><tr><th>แถวที่</th><th>วันที่ตรวจ (Raw)</th><th>ปี ค.ศ. (ที่ใช้คำนวณ)</th><th>เวลาออกคิว (Raw)</th><th>เวลาเรียกคิว (Raw)</th><th>ผลการตรวจสอบ</th></tr></thead><tbody>';
+            let inspectionHTML = '<table class="w-full inspector-table"><thead><tr><th>วันที่ตรวจ (Raw)</th><th>เวลาออกคิว (Raw)</th><th>เวลารอ (นาที)</th><th>ช่วงเวลา (ที่กำหนด)</th><th>ผลการตรวจสอบ</th></tr></thead><tbody>';
             const formatRawValue = val => val === null ? 'NULL' : `${String(val)} (${typeof val})`;
             
-            data.slice(0, 5).forEach((row, index) => {
-                let status = '';
-                const receiptDateAD = parseDateWithThaiSupport(row['วันที่ตรวจ']);
-                const startTime = parseTime(row['เวลาออกคิว'], receiptDateAD);
-                const callTime = parseTime(row['เวลาเรียกคิว'], receiptDateAD);
-                
-                if (!receiptDateAD) { status = 'วันที่ตรวจไม่ถูกต้อง'; }
-                else if (!startTime) { status = 'เวลาออกคิวไม่ถูกต้อง'; }
-                else if (!callTime) { status = 'เวลาเรียกคิวไม่ถูกต้อง'; }
-                else {
-                    const waitMinutes = (callTime.getTime() - startTime.getTime()) / (1000 * 60);
-                    if (waitMinutes < 0 || waitMinutes > 210) { status = `เวลารอ ${waitMinutes.toFixed(0)} นาที (ต้องอยู่ระหว่าง 0-210)`; }
-                    else {
-                        const timePeriod = getTimePeriod(startTime);
-                        if (timePeriod === 'นอกช่วงเวลา') { status = 'อยู่นอกช่วงเวลาทำการ (08:00-16:30)'; }
-                        else { status = 'ผ่านเงื่อนไข'; }
-                    }
-                }
+            data.slice(0, 5).forEach((row) => {
                 inspectionHTML += `<tr>
-                    <td>${index + 1} (จากที่กรอง)</td>
-                    <td><code class="text-xs">${formatRawValue(row['วันที่ตรวจ'])}</code></td>
-                    <td><code class="text-xs font-bold ${receiptDateAD ? 'text-blue-600' : 'status-error'}">${receiptDateAD ? receiptDateAD.getFullYear() : 'N/A'}</code></td>
-                    <td><code class="text-xs">${formatRawValue(row['เวลาออกคิว'])}</code></td>
-                    <td><code class="text-xs">${formatRawValue(row['เวลาเรียกคิว'])}</code></td>
-                    <td class="${status === 'ผ่านเงื่อนไข' ? 'status-ok' : 'status-error'}">${status}</td>
+                    <td><code class="text-xs">${formatRawValue(row.rawDate)}</code></td>
+                    <td><code class="text-xs">${formatRawValue(row.rawStartTime)}</code></td>
+                    <td><code class="text-xs font-bold text-blue-600">${row.waitMinutes.toFixed(2)}</code></td>
+                    <td><code class="text-xs font-bold ${row.timePeriod === 'นอกช่วงเวลา' ? 'status-error' : 'status-ok'}">${row.timePeriod}</code></td>
+                    <td class="status-ok">ผ่านเงื่อนไข</td>
                 </tr>`;
             });
             inspectionHTML += '</tbody></table>';
             inspectorContainer.innerHTML = inspectionHTML;
         }
-
-        // --- Core Report Generation Logic ---
-        function generateReport(data) {
-            if (data.length === 0) return []; 
+        
+        // --- Core Data Processing Function ---
+        // *** MODIFIED: Removed Office Hours Filter ***
+        function processData(data, minWait, maxWait, customPeriods) {
+            const processed = [];
             
-            const requiredColumns = ['วันที่ตรวจ', 'เวลาออกคิว', 'เวลาเรียกคิว'];
-            if (originalData.length > 0 && !requiredColumns.every(col => col in originalData[0])) { 
-                throw new Error(`ไฟล์ที่อัปโหลดขาดคอลัมน์ที่จำเป็น`); 
-            }
-            
-            const totalPatientsAll = data.reduce((acc, row) => {
-                const receiptDate = parseDateWithThaiSupport(row['วันที่ตรวจ']);
-                if (receiptDate) {
-                    const monthKey = `${receiptDate.getFullYear()}-${String(receiptDate.getMonth() + 1).padStart(2, '0')}`;
-                    acc[monthKey] = (acc[monthKey] || 0) + 1;
-                }
-                return acc;
-            }, {});
-
-            let processedData = data.map(row => {
+            for (const row of data) {
                 const receiptDate = parseDateWithThaiSupport(row['วันที่ตรวจ']);
                 const startTime = parseTime(row['เวลาออกคิว'], receiptDate);
                 const callTime = parseTime(row['เวลาเรียกคิว'], receiptDate);
-                if (!receiptDate || !startTime || !callTime) return null;
+
+                if (!receiptDate || !startTime || !callTime) continue;
+                
+                // *** REMOVED Office Hours Check ***
+
                 const waitMinutes = (callTime.getTime() - startTime.getTime()) / (1000 * 60);
-                if (waitMinutes < 0 || waitMinutes > 210) return null; 
-                const timePeriod = getTimePeriod(startTime);
-                if (timePeriod === 'นอกช่วงเวลา') return null;
+                if (waitMinutes < minWait || waitMinutes > maxWait) continue;
+
                 const monthKey = `${receiptDate.getFullYear()}-${String(receiptDate.getMonth() + 1).padStart(2, '0')}`;
                 const day = receiptDate.getDate(); 
-                return { month: monthKey, day: day, waitMinutes, timePeriod };
-            }).filter(Boolean);
-            
-            detailedProcessedData = processedData;
+                const dayOfWeek = receiptDate.getDay(); 
+                
+                processed.push({
+                    month: monthKey, 
+                    day: day, 
+                    dayOfWeek: dayOfWeek, 
+                    waitMinutes: waitMinutes, 
+                    timePeriod: getPeriodName(startTime, customPeriods),
+                    rawDate: row['วันที่ตรวจ'], 
+                    rawStartTime: row['เวลาออกคิว'] 
+                });
+            }
+            return processed;
+        }
+        // --- *** END MODIFIED *** ---
 
+
+        // --- Dynamic Report Generation ---
+        function generateDynamicReport(processedData, customPeriods, totalPatientsByMonth) {
             const summary = processedData.reduce((acc, item) => {
                 const { month, waitMinutes, timePeriod } = item;
+
                 if (!acc[month]) {
-                    acc[month] = { totalWait: 0, totalCount: 0, count_le_45: 0, 'sum_10.00–11.59': 0, 'count_10.00–11.59': 0, 'count_le_60_10-12': 0, 'sum_12.00–13.59': 0, 'count_12.00–13.59': 0, 'count_le_60_12-14': 0, 'sum_08-10 & 14-16.30': 0, 'count_08-10 & 14-16.30': 0, 'count_lt_31_08-10 & 14-16.30': 0, };
+                    acc[month] = {
+                        'totalWait_All': 0,
+                        'totalCount_All': 0,
+                    };
+                    for (const period of customPeriods) {
+                        acc[month][`sum_${period.name}`] = 0;
+                        acc[month][`count_${period.name}`] = 0;
+                        if (period.threshold !== null) {
+                            acc[month][`count_le_X_${period.name}`] = 0; 
+                        }
+                    }
                 }
+                
                 const s = acc[month];
-                s.totalWait += waitMinutes; s.totalCount++;
-                if (waitMinutes <= 45) s.count_le_45++;
-                if (timePeriod === '08-10 & 14-16.30' && waitMinutes < 31) s['count_lt_31_08-10 & 14-16.30']++;
-                if (timePeriod === '10.00–11.59' && waitMinutes <= 60) s['count_le_60_10-12']++;
-                if (timePeriod === '12.00–13.59' && waitMinutes <= 60) s['count_le_60_12-14']++;
-                s[`sum_${timePeriod}`] += waitMinutes; s[`count_${timePeriod}`]++;
+                s.totalWait_All += waitMinutes;
+                s.totalCount_All++;
+                
+                const period = customPeriods.find(p => p.name === timePeriod);
+                if (period) { 
+                    s[`sum_${timePeriod}`] += waitMinutes;
+                    s[`count_${timePeriod}`]++;
+                    
+                    if (period.threshold !== null && waitMinutes <= period.threshold) {
+                        s[`count_le_X_${timePeriod}`]++;
+                    }
+                }
+                
                 return acc;
             }, {});
             
             return Object.keys(summary).sort().map(month => {
                 const s = summary[month];
-                const totalCalculated = s['count_10.00–11.59'] + s['count_12.00–13.59'] + s['count_08-10 & 14-16.30'];
                 
-                const count_gt_60_10_12 = s['count_10.00–11.59'] - s['count_le_60_10-12'];
-                const count_gt_60_12_14 = s['count_12.00–13.59'] - s['count_le_60_12-14'];
-                const count_ge_31_08_10_etc = s['count_08-10 & 14-16.30'] - s['count_lt_31_08-10 & 14-16.30'];
-
-                const pct_10_12 = s['count_10.00–11.59'] > 0 ? parseFloat(((s['count_le_60_10-12'] / s['count_10.00–11.59']) * 100).toFixed(2)) : 0;
-                const pct_12_14 = s['count_12.00–13.59'] > 0 ? parseFloat(((s['count_le_60_12-14'] / s['count_12.00–13.59']) * 100).toFixed(2)) : 0;
-                const pct_08_10_etc = s['count_08-10 & 14-16.30'] > 0 ? parseFloat(((s['count_lt_31_08-10 & 14-16.30'] / s['count_08-10 & 14-16.30']) * 100).toFixed(2)) : 0;
-
-                return { 
+                const reportRow = {
                     'monthKey': month,
                     'เดือน': convertToThaiMonthYear(month), 
-                    'จำนวนผู้ป่วยทั้งหมด (ตามคิวที่เลือก)': totalPatientsAll[month] || 0, 
-                    'จำนวนผู้ป่วยที่นำมาคำนวณ': totalCalculated, 
-                    'ระยะเวลารอคอยเฉลี่ยทั้งวัน': s.totalCount > 0 ? parseFloat((s.totalWait / s.totalCount).toFixed(2)) : 0, 
-                    'จำนวนผู้ป่วย (<= 45 นาที)': s.count_le_45, 
-                    
-                    'เฉลี่ย (นาที) 10-12': s['count_10.00–11.59'] > 0 ? parseFloat((s['sum_10.00–11.59'] / s['count_10.00–11.59']).toFixed(2)) : 0, 
-                    'จำนวนผู้ป่วย 10-12': s['count_10.00–11.59'], 
-                    'จำนวนผู้ป่วย (<= 60 นาที) 10-12': s['count_le_60_10-12'], 
-                    'จำนวนผู้ป่วย (> 60 นาที) 10-12': count_gt_60_10_12,
-                    '(%) ภายในเวลา 10-12': pct_10_12,
-                    
-                    'เฉลี่ย (นาที) 12-14': s['count_12.00–13.59'] > 0 ? parseFloat((s['sum_12.00–13.59'] / s['count_12.00–13.59']).toFixed(2)) : 0, 
-                    'จำนวนผู้ป่วย 12-14': s['count_12.00–13.59'], 
-                    'จำนวนผู้ป่วย (<= 60 นาที) 12-14': s['count_le_60_12-14'], 
-                    'จำนวนผู้ป่วย (> 60 นาที) 12-14': count_gt_60_12_14,
-                    '(%) ภายในเวลา 12-14': pct_12_14,
-
-                    'เฉลี่ย (นาที) 08-10 & 14-16.30': s['count_08-10 & 14-16.30'] > 0 ? parseFloat((s['sum_08-10 & 14-16.30'] / s['count_08-10 & 14-16.30']).toFixed(2)) : 0, 
-                    'จำนวนผู้ป่วย 08-10 & 14-16.30': s['count_08-10 & 14-16.30'],
-                    'จำนวนผู้ป่วย (< 31 นาที) 08-10 & 14-16.30': s['count_lt_31_08-10 & 14-16.30'],
-                    'จำนวนผู้ป่วย (>= 31 นาที) 08-10 & 14-16.30': count_ge_31_08_10_etc,
-                    '(%) ภายในเวลา 08-10 & 14-16.30': pct_08_10_etc,
+                    'จำนวนผู้ป่วยทั้งหมด': totalPatientsByMonth[month] || 0, 
+                    'จำนวนผู้ป่วย (ที่คำนวณได้)': s.totalCount_All, 
+                    'ระยะเวลารอคอยเฉลี่ยทั้งวัน': s.totalCount_All > 0 ? parseFloat((s.totalWait_All / s.totalCount_All).toFixed(2)) : 0, 
                 };
+                
+                for (const period of customPeriods) {
+                    const threshold = period.threshold;
+                    const sum = s[`sum_${period.name}`];
+                    const count = s[`count_${period.name}`];
+                    
+                    reportRow[`เฉลี่ย (นาที) ${period.name}`] = count > 0 ? parseFloat((sum / count).toFixed(2)) : 0;
+                    
+                    if (threshold !== null) {
+                        const thresholdCount = s[`count_le_X_${period.name}`];
+                        // *** MODIFIED CALCULATION ***
+                        const percentage = (count > 0) ? parseFloat(((thresholdCount / count) * 100).toFixed(2)) : 0;
+                        
+                        reportRow[`จำนวน (<= ${threshold} นาที) ${period.name}`] = thresholdCount;
+                        // *** NEW COLUMN ***
+                        reportRow[`ร้อยละ (<= ${threshold} นาที) ${period.name}`] = percentage;
+                    }
+                    
+                    reportRow[`จำนวนผู้ป่วย ${period.name}`] = count;
+                }
+                
+                return reportRow;
             });
         }
 
-        // --- UI Display Logic ---
-        function displayReport(reportData) {
+
+        // --- Dynamic UI Display ---
+        function displayDynamicReport(reportData, customPeriods) {
             resultSection.classList.remove('hidden');
+            
+            const baseColors = ['bg-blue-100', 'bg-green-100', 'bg-yellow-100', 'bg-red-100', 'bg-purple-100', 'bg-pink-100'];
+            dynamicPeriodColors = {};
+            customPeriods.forEach((period, index) => {
+                dynamicPeriodColors[period.name] = baseColors[index % baseColors.length];
+            });
+
             const table = document.createElement('table');
             table.className = 'w-full text-sm text-left text-gray-700';
             const thead = document.createElement('thead');
             thead.className = 'text-xs text-gray-700 uppercase';
             const tbody = document.createElement('tbody');
+            
             if (reportData.length === 0) { 
-                resultContainer.innerHTML = ''; 
-                chartSection.classList.add('hidden'); 
-                if (myLineChart) { myLineChart.destroy(); } 
+                resultContainer.innerHTML = '<p>ไม่พบข้อมูลสรุป</p>'; 
                 return; 
             }
             
@@ -732,52 +894,68 @@
                 th.textContent = headerText.replace(/ /g, '\u00A0'); 
 
                 let thClasses = 'px-4 py-3 text-center text-xs uppercase font-medium ';
-                if (headerText.includes('08-10 & 14-16.30')) {
-                    thClasses += 'bg-blue-100 text-blue-900';
-                } else if (headerText.includes('10-12')) {
-                    thClasses += 'bg-green-100 text-green-900';
-                } else if (headerText.includes('12-14')) {
-                    thClasses += 'bg-yellow-100 text-yellow-900';
-                } else {
-                    thClasses += 'bg-slate-100 text-slate-800';
-                }
-                th.className = thClasses;
                 
-                if (headerText.startsWith('เฉลี่ย (นาที) 10-12') || headerText.startsWith('เฉลี่ย (นาที) 12-14') || headerText.startsWith('เฉลี่ย (นาที) 08-10')) {
-                    th.classList.add('border-l-2', 'border-gray-300');
+                let foundColor = 'bg-slate-100 text-slate-800'; // Default
+                for (const period of customPeriods) {
+                    if (headerText.includes(period.name)) {
+                        foundColor = `${dynamicPeriodColors[period.name]} text-gray-900`;
+                        th.classList.add('border-l-2', 'border-gray-300');
+                        break;
+                    }
                 }
+                if (headerText.startsWith('จำนวนผู้ป่วยทั้งหมด') || headerText.startsWith('จำนวนผู้ป่วย (ที่คำนวณได้)')) {
+                     foundColor = 'bg-gray-200 text-gray-900';
+                }
+                
+                th.className = thClasses + foundColor;
                 headerRow.appendChild(th); 
             });
             thead.appendChild(headerRow);
             
-            chartMonthSelector.innerHTML = ''; 
-            
-            reportData.forEach((rowData, index) => { 
+            reportData.forEach((rowData) => { 
                 const row = document.createElement('tr'); 
                 row.className = 'border-b even:bg-gray-50 hover:bg-sky-100 transition-colors duration-150'; 
                 
                 headers.forEach(header => { 
                     const td = document.createElement('td'); 
-                    let content = rowData[header];
-                    
-                    if (header.startsWith('(%')) {
+                    let content = rowData[header]; 
+
+                    // --- *** MODIFIED: Format Percentage *** ---
+                    if (header.startsWith('ร้อยละ')) {
                         content = `${content}%`;
-                        td.classList.add('font-bold'); 
+                        td.classList.add('font-bold');
                     }
+                    
                     td.textContent = content; 
 
                     let tdClasses = 'px-4 py-3 text-center';
                     if (header !== 'เดือน') { 
                         tdClasses += ' text-right'; 
                     }
-                    if (header.startsWith('เฉลี่ย (นาที) 10-12') || header.startsWith('เฉลี่ย (นาที) 12-14') || header.startsWith('เฉลี่ย (นาที) 08-10')) {
-                        td.classList.add('border-l-2', 'border-gray-300');
+                    
+                    for (const period of customPeriods) {
+                        if (header.includes(period.name)) {
+                            td.classList.add('border-l-2', 'border-gray-300');
+                            break;
+                        }
                     }
+                    
                     td.className = tdClasses;
                     row.appendChild(td); 
                 }); 
                 tbody.appendChild(row); 
-                
+            });
+            
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            resultContainer.innerHTML = '';
+            resultContainer.appendChild(table);
+        }
+        
+        // --- Chart Month Selector (to preserve state) ---
+        function populateChartMonthSelector(reportData, previouslySelectedMonths) {
+            chartMonthSelector.innerHTML = ''; 
+            reportData.forEach((rowData, index) => { 
                 const monthName = rowData['เดือน'];
                 const monthKey = rowData['monthKey']; 
                 const wrapper = document.createElement('div');
@@ -786,7 +964,13 @@
                 checkbox.type = 'checkbox';
                 checkbox.id = `month-chk-${index}`;
                 checkbox.value = monthKey; 
-                checkbox.checked = true;
+                
+                if (previouslySelectedMonths === null) {
+                    checkbox.checked = true; // First run, check all
+                } else {
+                    checkbox.checked = previouslySelectedMonths.includes(monthKey); // Restore state
+                }
+                
                 checkbox.className = 'month-chart-checkbox h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500';
                 const label = document.createElement('label');
                 label.htmlFor = `month-chk-${index}`;
@@ -797,47 +981,51 @@
                 chartMonthSelector.appendChild(wrapper);
             });
             
-            table.appendChild(thead);
-            table.appendChild(tbody);
-            resultContainer.innerHTML = '';
-            resultContainer.appendChild(table);
-            
-            chartSection.classList.remove('hidden');
-            selectAllMonthsCheckbox.checked = true;
-            generateLineChart(); // Auto-generate chart on first load
+            const allCheckboxes = document.querySelectorAll('.month-chart-checkbox');
+            const allChecked = allCheckboxes.length > 0 && Array.from(allCheckboxes).every(cb => cb.checked);
+            selectAllMonthsCheckbox.checked = allChecked;
         }
-        
-        
-        // --- *** THIS ENTIRE FUNCTION HAS BEEN MODIFIED *** ---
+
+        function populateChartPeriodSelector(customPeriods) {
+            chartPeriodCheckboxContainer.innerHTML = ''; // Clear
+            const baseColors = ['text-blue-600', 'text-green-600', 'text-yellow-600', 'text-red-600', 'text-purple-600', 'text-pink-600'];
+
+            chartPeriodCheckboxContainer.innerHTML += `
+                <label class="flex items-center space-x-3 cursor-pointer select-none">
+                    <input type="checkbox" class="time-period-checkbox h-4 w-4 rounded border-gray-300 text-gray-700 focus:ring-gray-600" value="เฉลี่ยทั้งวัน" checked>
+                    <span class="text-sm text-gray-700 font-semibold">เฉลี่ยทั้งวัน (ทุกช่วงเวลา)</span>
+                </label>
+            `;
+            
+            customPeriods.forEach((period, index) => {
+                const colorClass = baseColors[index % baseColors.length];
+                chartPeriodCheckboxContainer.innerHTML += `
+                    <label class="flex items-center space-x-3 cursor-pointer select-none">
+                        <input type="checkbox" class="time-period-checkbox h-4 w-4 rounded border-gray-300 ${colorClass} focus:ring-${colorClass.split('-')[1]}-500" value="${period.name}" checked>
+                        <span class="text-sm text-gray-700">${period.name}</span>
+                    </label>
+                `;
+            });
+        }
+
+
+        // --- Dynamic Chart Generation ---
         function generateLineChart() {
             if (finalReportData.length === 0) return;
 
             const selectedMonthCheckboxes = document.querySelectorAll('.month-chart-checkbox:checked');
             
             if (selectedMonthCheckboxes.length === 0) {
-                 Swal.fire({
-                  title: 'ไม่พบข้อมูล',
-                  text: 'กรุณาเลือกอย่างน้อย 1 เดือนเพื่อสร้างกราฟ',
-                  icon: 'warning',
-                  timer: 2500,
-                  showConfirmButton: false
-                });
+                 Swal.fire({ title: 'ไม่พบข้อมูล', text: 'กรุณาเลือกอย่างน้อย 1 เดือนเพื่อสร้างกราฟ', icon: 'warning', timer: 2500, showConfirmButton: false });
                 return;
             }
 
-            // Get selected time periods
             const selectedTimePeriods = Array.from(
                 document.querySelectorAll('.time-period-checkbox:checked')
             ).map(cb => cb.value);
 
             if (selectedTimePeriods.length === 0) {
-                Swal.fire({
-                  title: 'ไม่พบข้อมูล',
-                  text: 'กรุณาเลือกอย่างน้อย 1 ช่วงเวลาเพื่อสร้างกราฟ',
-                  icon: 'warning',
-                  timer: 2500,
-                  showConfirmButton: false
-                });
+                Swal.fire({ title: 'ไม่พบข้อมูล', text: 'กรุณาเลือกอย่างน้อย 1 ช่วงเวลาเพื่อสร้างกราฟ', icon: 'warning', timer: 2500, showConfirmButton: false });
                 return;
             }
 
@@ -845,15 +1033,18 @@
                 myLineChart.destroy();
             }
             
+            chartLegendDiv.innerHTML = '';
+            chartLegendDiv.classList.add('hidden');
+            
             const ctx = document.getElementById('wait-time-chart').getContext('2d');
             
-            // Define colors
-            const lineColors = {
-                'เฉลี่ยทั้งวัน': 'rgb(59, 130, 246)', // blue-500
-                '10.00–11.59': 'rgb(34, 197, 94)', // green-500
-                '12.00–13.59': 'rgb(234, 179, 8)', // yellow-500
-                '08-10 & 14-16.30': 'rgb(239, 68, 68)', // red-500
-            };
+            const lineColors = {};
+            const baseColors = ['rgb(59, 130, 246)', 'rgb(34, 197, 94)', 'rgb(234, 179, 8)', 'rgb(239, 68, 68)', 'rgb(147, 51, 234)', 'rgb(219, 39, 119)'];
+            getCustomPeriodsFromUI().forEach((period, index) => {
+                lineColors[period.name] = baseColors[index % baseColors.length];
+            });
+            lineColors['เฉลี่ยทั้งวัน'] = 'rgb(107, 114, 128)'; // gray-500
+            
             
             // --- BRANCH 1: DAILY VIEW (1 Month Selected) ---
             if (selectedMonthCheckboxes.length === 1) {
@@ -861,28 +1052,31 @@
                 const selectedMonthKey = selectedCheckbox.value; 
                 const selectedMonthName = selectedCheckbox.labels[0].textContent; 
                 
-                // *** MODIFIED: Get data THEN build labels ***
                 const monthData = detailedProcessedData.filter(d => d.month === selectedMonthKey);
-                // *** NEW: Build labels only from days with data ***
-                const labels = [...new Set(monthData.map(d => d.day))].sort((a, b) => a - b);
-                
+
+                const dailyDataMap = new Map();
+                for (const item of monthData) {
+                    if (!dailyDataMap.has(item.day)) {
+                        dailyDataMap.set(item.day, {
+                            day: item.day,
+                            dayOfWeek: item.dayOfWeek,
+                            dayAbbr: thaiDayAbbr[item.dayOfWeek]
+                        });
+                    }
+                }
+                const sortedDaysInfo = [...dailyDataMap.values()].sort((a, b) => a.day - b.day);
+                const labels = sortedDaysInfo.map(d => `${d.day} (${d.dayAbbr})`);
+                const pointColors = sortedDaysInfo.map(d => dayColorConfig[d.dayOfWeek].color);
+
                 if (labels.length === 0) {
-                    Swal.fire({
-                      title: 'ไม่พบข้อมูล',
-                      text: 'ไม่พบข้อมูลรายวันสำหรับเดือนที่เลือก',
-                      icon: 'warning',
-                      timer: 2500,
-                      showConfirmButton: false
-                    });
+                    Swal.fire({ title: 'ไม่พบข้อมูล', text: 'ไม่พบข้อมูลรายวันสำหรับเดือนที่เลือก (อาจถูกกรองออกโดยตัวเลือกคิว)', icon: 'warning', timer: 2500, showConfirmButton: false });
                     return;
                 }
                 
-                // Helper to calculate daily average for a specific period
-                // *** MODIFIED: Accepts 'labels' array ***
-                const aggregateDaily = (data, periodFilter, labels) => {
-                    const dailySummary = {}; // { 1: {sum: 100, count: 5}, 3: {...} }
+                const aggregateDaily = (data, periodFilter, sortedDaysInfo) => {
+                    const dailySummary = {}; 
                     for (const item of data) {
-                        if (periodFilter === null || item.timePeriod === periodFilter) {
+                        if (periodFilter === 'เฉลี่ยทั้งวัน' || item.timePeriod === periodFilter) {
                             const day = item.day;
                             if (!dailySummary[day]) dailySummary[day] = { sum: 0, count: 0 };
                             dailySummary[day].sum += item.waitMinutes;
@@ -890,24 +1084,20 @@
                         }
                     }
                     const chartData = [];
-                    // *** MODIFIED: Loop through dynamic labels, not 1-31 ***
-                    for (const day of labels) { 
+                    for (const dayInfo of sortedDaysInfo) { 
+                        const day = dayInfo.day;
                         if (dailySummary[day] && dailySummary[day].count > 0) {
                             chartData.push(parseFloat((dailySummary[day].sum / dailySummary[day].count).toFixed(2)));
                         } else {
-                            // This day exists in other periods, but not this one
                             chartData.push(null); 
                         }
                     }
                     return chartData;
                 };
 
-                // Build datasets
                 const datasets = [];
                 for (const period of selectedTimePeriods) {
-                    const periodKey = (period === 'เฉลี่ยทั้งวัน') ? null : period;
-                    // *** MODIFIED: Pass 'labels' to helper ***
-                    const data = aggregateDaily(monthData, periodKey, labels); 
+                    const data = aggregateDaily(monthData, period, sortedDaysInfo); 
                     const color = lineColors[period] || '#9ca3af'; 
                     
                     datasets.push({
@@ -918,11 +1108,13 @@
                         fill: false, 
                         tension: 0.1,
                         borderWidth: 2,
-                        pointBackgroundColor: color
+                        pointBackgroundColor: pointColors, 
+                        pointBorderColor: pointColors,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     });
                 }
                 
-                // Create Daily Chart
                 myLineChart = new Chart(ctx, {
                     type: 'line',
                     data: { labels: labels, datasets: datasets },
@@ -935,28 +1127,26 @@
                         plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw} นาที` } } }
                     }
                 });
+                
+                displayChartLegend();
 
             } 
             // --- BRANCH 2: MONTHLY TREND VIEW (>1 Month Selected) ---
             else {
-                // Map readable period names to keys in finalReportData
-                const periodKeyMap = {
-                    'เฉลี่ยทั้งวัน': 'ระยะเวลารอคอยเฉลี่ยทั้งวัน',
-                    '10.00–11.59': 'เฉลี่ย (นาที) 10-12',
-                    '12.00–13.59': 'เฉลี่ย (นาที) 12-14',
-                    '08-10 & 14-16.30': 'เฉลี่ย (นาที) 08-10 & 14-16.30'
-                };
+                const periodKeyMap = { 'เฉลี่ยทั้งวัน': 'ระยะเวลารอคอยเฉลี่ยทั้งวัน' };
+                getCustomPeriodsFromUI().forEach(p => {
+                    periodKeyMap[p.name] = `เฉลี่ย (นาที) ${p.name}`;
+                });
                 
                 const labels = [];
                 const datasets = [];
                 const selectedMonthKeys = [];
                 
                 selectedMonthCheckboxes.forEach(cb => {
-                    labels.push(cb.labels[0].textContent); // "มกราคม 2567"
-                    selectedMonthKeys.push(cb.value); // "2024-01"
+                    labels.push(cb.labels[0].textContent);
+                    selectedMonthKeys.push(cb.value);
                 });
 
-                // Loop through selected TIME PERIODS
                 for (const period of selectedTimePeriods) {
                     const dataKey = periodKeyMap[period];
                     if (!dataKey) continue; 
@@ -964,7 +1154,6 @@
                     const periodDataPoints = [];
                     const color = lineColors[period] || '#9ca3af';
 
-                    // Loop through selected MONTHS to build this line
                     for (const monthKey of selectedMonthKeys) {
                         const rowData = finalReportData.find(d => d.monthKey === monthKey);
                         if (rowData && rowData[dataKey] !== undefined) {
@@ -986,7 +1175,6 @@
                     });
                 }
 
-                // Create Monthly Trend Chart
                 myLineChart = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -1005,14 +1193,28 @@
             }
         }
         
+        function displayChartLegend() {
+            let legendHtml = '<h4 class="font-semibold text-gray-700 mb-2">คำอธิบายสี (วันในสัปดาห์)</h4><div class="flex flex-wrap gap-x-4 gap-y-2">';
+            const dayOrder = [1, 2, 3, 4, 5, 6, 0]; 
+            for (const dayIndex of dayOrder) {
+                const day = dayColorConfig[dayIndex];
+                legendHtml += `<span class="flex items-center"><span class="w-3 h-3 rounded-sm mr-1.5" style="background-color: ${day.color}; border: 1px solid #777;"></span>${day.name}</span>`;
+            }
+            legendHtml += '</div>';
+            chartLegendDiv.innerHTML = legendHtml;
+            chartLegendDiv.classList.remove('hidden');
+        }
+        
         
         function showError(message, type = 'error') {
             const colorClass = type === 'warn' ? 'text-amber-600' : 'text-red-600';
             statusDiv.innerHTML = `<span class="${colorClass}">${message}</span>`;
-            inspectorSection.classList.remove('hidden'); 
-
+            
+            inspectorSection.classList.add('hidden');
+            resultSection.classList.add('hidden');
             chartSection.classList.add('hidden');
             if (myLineChart) { myLineChart.destroy(); }
+            chartLegendDiv.classList.add('hidden'); 
 
             const iconType = type === 'warn' ? 'warning' : 'error';
             const alertMessage = message.replace(/❌|⚠️/g, '').trim(); 
@@ -1021,10 +1223,11 @@
                 title: iconType === 'error' ? 'เกิดข้อผิดพลาด' : (type === 'warn' ? 'ไม่พบข้อมูล' : 'แจ้งเตือน'),
                 text: alertMessage,
                 icon: iconType,
-                timer: 2500,
+                timer: 3000,
                 showConfirmButton: false
             });
         }
+        
     </script>
 </body>
 </html>
